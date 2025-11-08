@@ -1,0 +1,18 @@
+{
+  "name": "drunk-simulator",
+  "version": "1.0.0",
+  "description": "Top-down bar simulator with crowd dynamics",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11"
+  },
+  "dependencies": {
+    "phaser": "^3.70.0"
+  }
+}
