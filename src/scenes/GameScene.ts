@@ -84,7 +84,7 @@ export class GameScene extends Phaser.Scene {
         const day = String(now.getDate()).padStart(2, '0');
         const year = now.getFullYear();
 
-        const commitHash = 'dev'; // Will update after first commit
+        const commitHash = '928743e'; // Current commit ID
         const timeStamp = `${hours}:${minutes}:${seconds} ${month}/${day}/${year}`;
 
         const versionText = this.add.text(
