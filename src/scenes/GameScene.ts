@@ -12,34 +12,39 @@ export class GameScene extends Phaser.Scene {
         super({ key: 'GameScene' });
     }
 
-    create() {
-        // Fill entire game world with dark grey background
-        const bg = this.add.graphics();
-        bg.fillStyle(0x404040, 1);
-        bg.fillRect(0, 0, 1024, 1400);
+    preload() {
+        // Load the tileset
+        this.load.image('tileset', 'assets/tileset.png');
+    }
 
+    create() {
         // Create static groups for walls and furniture
         this.walls = this.physics.add.staticGroup();
         this.furniture = this.physics.add.staticGroup();
 
-        // Draw the bar layout
-        this.drawBarLayout();
+        // Build the map using tileset
+        this.buildMapFromTiles();
 
-        // Create player
+        // Create player sprite
         const graphics = this.add.graphics();
         graphics.fillStyle(0x00ff00, 1);
-        graphics.fillCircle(0, 0, 12);
-        graphics.generateTexture('player-temp', 24, 24);
+        graphics.fillCircle(12, 12, 12);  // Center the circle in the 24x24 texture
+        graphics.generateTexture('player-sprite', 24, 24);
         graphics.destroy();
 
         // Spawn player on the street (bottom of screen)
-        this.player = this.physics.add.sprite(512, 1300, 'player-temp');
+        this.player = this.physics.add.sprite(512, 1300, 'player-sprite');
         this.player.setCollideWorldBounds(true);
+        this.player.setDepth(100); // Always on top
+        this.player.setOrigin(0.5, 0.5); // Ensure proper centering
 
         // Setup camera
         this.cameras.main.setBounds(0, 0, 1024, 1400);
         this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
         this.cameras.main.setZoom(1);
+
+        // Immediately center camera on player
+        this.cameras.main.centerOn(this.player.x, this.player.y);
 
         // Setup collisions
         this.physics.add.collider(this.player, this.walls);
@@ -130,7 +135,135 @@ export class GameScene extends Phaser.Scene {
         this.updateNPCs();
     }
 
-    private drawBarLayout() {
+    private buildMapFromTiles() {
+        // Tile indices from our tileset:
+        // 0=street, 1=bar floor (white), 2=patio, 3=wall horiz, 4=wall vert
+        // 5=door, 6=bar counter horiz, 7=bar counter vert, 8=table, 9=stairs
+
+        const TILE_SIZE = 32;
+        const MAP_WIDTH = 32;  // 1024px / 32px
+        const MAP_HEIGHT = 44; // 1400px / 32px (approx)
+
+        // Simple tile map - we'll build it row by row
+        // Using tile indices from our tileset
+        this.drawTiledArea();
+    }
+
+    private drawTiledArea() {
+        const TILE_SIZE = 32;
+
+        // === PATIO (rows 0-7, top of map) ===
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 32; col++) {
+                let tileIndex = 2; // Patio floor
+
+                // Walls
+                if (row === 0) tileIndex = 3; // Top wall
+                if (col === 0 || col === 31) tileIndex = 4; // Side walls
+                if (row === 7 && (col < 12 || col > 19)) tileIndex = 3; // Bottom wall with door gap
+
+                this.addTile(col, row, tileIndex, row === 0 || col === 0 || col === 31 || (row === 7 && (col < 12 || col > 19)));
+            }
+        }
+
+        // === MAIN BAR ROOM (rows 8-29) ===
+        for (let row = 8; row < 30; row++) {
+            for (let col = 0; col < 32; col++) {
+                let tileIndex = 1; // White bar floor
+                let hasCollision = false;
+
+                // Side walls
+                if (col === 0 || col === 31) {
+                    tileIndex = 4;
+                    hasCollision = true;
+                }
+
+                // L-shaped bar (top-left)
+                if (row >= 11 && row <= 13 && col >= 3 && col <= 13) {
+                    tileIndex = 6; // Horizontal bar counter
+                    hasCollision = true;
+                }
+                if (row >= 11 && row <= 23 && col >= 3 && col <= 5) {
+                    tileIndex = 7; // Vertical bar counter
+                    hasCollision = true;
+                }
+
+                // Tables (right side)
+                if ((row === 12 || row === 13) && (col === 19 || col === 20)) tileIndex = 8; // Table 1
+                if ((row === 12 || row === 13) && (col === 24 || col === 25)) tileIndex = 8; // Table 2
+                if ((row === 18 || row === 19) && (col === 19 || col === 20)) tileIndex = 8; // Table 3
+                if ((row === 18 || row === 19) && (col === 24 || col === 25)) tileIndex = 8; // Table 4
+
+                if (tileIndex === 8) hasCollision = true;
+
+                this.addTile(col, row, tileIndex, hasCollision);
+            }
+        }
+
+        // === STAIRS (rows 30-33) ===
+        for (let row = 30; row < 34; row++) {
+            for (let col = 0; col < 32; col++) {
+                let tileIndex = 1; // White floor
+
+                // Stairs in center
+                if (col >= 10 && col <= 22) {
+                    tileIndex = 9; // Stairs
+                }
+
+                this.addTile(col, row, tileIndex, false);
+            }
+        }
+
+        // === ENTRANCE (rows 34-37) ===
+        for (let row = 34; row < 38; row++) {
+            for (let col = 0; col < 32; col++) {
+                let tileIndex = 1; // White floor
+                let hasCollision = false;
+
+                // Walls with door gaps
+                if (row === 37 && (col < 11 || col > 21)) {
+                    tileIndex = 3;
+                    hasCollision = true;
+                }
+
+                this.addTile(col, row, tileIndex, hasCollision);
+            }
+        }
+
+        // === STREET (rows 38-43, bottom) ===
+        for (let row = 38; row < 44; row++) {
+            for (let col = 0; col < 32; col++) {
+                this.addTile(col, row, 0, false); // Street tile
+            }
+        }
+    }
+
+    private addTile(col: number, row: number, tileIndex: number, hasCollision: boolean) {
+        const TILE_SIZE = 32;
+        const x = col * TILE_SIZE + TILE_SIZE / 2;
+        const y = row * TILE_SIZE + TILE_SIZE / 2;
+
+        // Create tile sprite
+        const tile = this.add.sprite(x, y, 'tileset');
+
+        // Calculate frame position in tileset (8 tiles per row)
+        const frameX = (tileIndex % 8) * 32;
+        const frameY = Math.floor(tileIndex / 8) * 32;
+
+        tile.setCrop(frameX, frameY, 32, 32);
+        tile.setOrigin(0.5, 0.5);
+        tile.setDisplaySize(32, 32);
+
+        // Add collision
+        if (hasCollision) {
+            const collider = this.walls.create(x, y, undefined);
+            collider.setSize(32, 32);
+            collider.refreshBody();
+            collider.setVisible(false);
+        }
+    }
+
+    private drawBarLayout_OLD() {
         const graphics = this.add.graphics();
 
         // === PATIO (top/back area - "out back") ===
