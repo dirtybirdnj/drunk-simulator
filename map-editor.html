@@ -372,6 +372,7 @@
         let fillStart = null;
         let fillPreview = null;
         let historySavedThisStroke = false; // Track if history was saved for current paint stroke
+        let lastHoveredCell = null; // Track last cell to prevent redundant operations
 
         // Initialize grid with default size
         function initGrid() {
@@ -1196,6 +1197,10 @@
         gridEl.addEventListener('mouseover', (e) => {
             const cell = e.target.closest('.cell');
             if (!cell) return;
+
+            // Only process if we entered a NEW cell (prevents thousands of redundant calls)
+            if (cell === lastHoveredCell) return;
+            lastHoveredCell = cell;
 
             const row = parseInt(cell.dataset.row);
             const col = parseInt(cell.dataset.col);
