@@ -38,25 +38,34 @@ export class EditorUI {
     }
 
     create(): void {
-        // Get the actual game config dimensions (not camera dimensions)
-        const width = this.scene.game.config.width as number;
-        const height = this.scene.game.config.height as number;
+        // Use camera display dimensions for positioning UI
+        const camera = this.scene.cameras.main;
+        const width = camera.width;
+        const height = camera.height;
 
-        console.log('📐 Creating EditorUI - Game config size:', width, 'x', height);
-        console.log('📐 Camera size:', this.scene.cameras.main.width, 'x', this.scene.cameras.main.height);
-        console.log('📐 Camera zoom:', this.scene.cameras.main.zoom);
+        console.log('📐 Creating EditorUI');
+        console.log('  → Camera size:', camera.width, 'x', camera.height);
+        console.log('  → Camera zoom:', camera.zoom);
+        console.log('  → Camera bounds:', camera.x, camera.y, camera.width, camera.height);
+        console.log('  → Game scale:', this.scene.scale.width, 'x', this.scene.scale.height);
 
-        // Create bottom bar container - positioned at absolute bottom
-        this.bottomBar = this.scene.add.container(0, 0);
+        // Create bottom bar as fixed UI overlay
+        // Position at bottom of camera viewport
+        const barHeight = 100;
+        const barY = height - (barHeight / 2);
+
+        console.log('  → Positioning bar at y:', barY, 'height:', barHeight);
+
+        // Create container at (0, barY) for bottom bar
+        this.bottomBar = this.scene.add.container(0, barY);
         this.bottomBar.setScrollFactor(0);
-        this.bottomBar.setDepth(10000); // Very high depth to ensure it's on top
+        this.bottomBar.setDepth(10000);
 
-        // Background for bottom bar - positioned at bottom of screen
-        const barY = height - 50; // Center of 100px bar at bottom
-        const barBg = this.scene.add.rectangle(width / 2, barY, width, 100, 0x000000, 0.95);
+        // Black background bar - centered at (0, 0) within container
+        const barBg = this.scene.add.rectangle(width / 2, 0, width, barHeight, 0x000000, 0.95);
         this.bottomBar.add(barBg);
 
-        console.log('✅ Created bottom bar at y:', barY, '(visible height:', height, ')');
+        console.log('✅ Created bottom bar');
 
         // Create tile palette
         this.createTilePalette();
@@ -72,18 +81,15 @@ export class EditorUI {
     }
 
     private createTilePalette(): void {
-        const height = this.scene.game.config.height as number;
-        const barY = height - 50;
-
         const startX = 60;
         const tileSize = 40;
         const spacing = 10;
+        const y = 0; // Relative to container
 
-        console.log('🎨 Creating tile palette with', this.FREE_TILES.length, 'tiles at y:', barY);
+        console.log('🎨 Creating tile palette with', this.FREE_TILES.length, 'tiles');
 
         this.FREE_TILES.forEach((tileType, index) => {
             const x = startX + (index * (tileSize + spacing));
-            const y = barY;
 
             // Tile background
             const bg = this.scene.add.rectangle(x, y, tileSize, tileSize, 0x333333);
@@ -125,12 +131,11 @@ export class EditorUI {
     }
 
     private createModeButton(): void {
-        const width = this.scene.game.config.width as number;
-        const height = this.scene.game.config.height as number;
-        const x = width - 120;
-        const y = height - 50;
+        const camera = this.scene.cameras.main;
+        const x = camera.width - 120;
+        const y = 0; // Relative to bottom bar container
 
-        console.log('🔘 Creating START button at:', x, y);
+        console.log('🔘 Creating START button');
 
         this.modeButton = this.scene.add.container(x, y);
 
@@ -155,15 +160,14 @@ export class EditorUI {
     }
 
     private createPlaybackControls(): void {
-        const width = this.scene.game.config.width as number;
-        const height = this.scene.game.config.height as number;
-        const centerX = width - 300;
-        const y = height - 50;
+        const camera = this.scene.cameras.main;
+        const centerX = camera.width - 300;
+        const y = 0; // Relative to bottom bar container
 
         this.playbackControls = this.scene.add.container(centerX, y);
         this.playbackControls.setVisible(false);
 
-        console.log('🎮 Created playback controls at:', centerX, y);
+        console.log('🎮 Created playback controls');
 
         const buttonData = [
             { x: -120, label: '🐌 Slow', scale: 0.5 },
