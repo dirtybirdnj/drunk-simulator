@@ -7,7 +7,9 @@
             font-family: monospace;
             background: #222;
             color: #fff;
-            padding: 20px;
+            padding: 10px;
+            margin: 0;
+            overflow: hidden;
         }
         #grid-container {
             flex: 1;
@@ -16,8 +18,10 @@
             background: #000;
             position: relative;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            justify-content: flex-start;
+            align-items: flex-start;
+            max-height: 100%;
+            padding: 20px;
         }
         #grid {
             display: inline-block;
@@ -101,18 +105,20 @@
         .container {
             display: flex;
             gap: 20px;
-            align-items: flex-start;
-            height: calc(100vh - 140px);
+            align-items: stretch;
+            height: calc(100vh - 60px);
+            max-height: calc(100vh - 60px);
+            overflow: hidden;
         }
         .palette-column {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             flex-shrink: 0;
-            width: 80px;
-            position: sticky;
-            top: 0;
-            align-self: flex-start;
+            width: 160px;
+            overflow-y: auto;
+            max-height: 100%;
+            align-content: start;
         }
         .buttons-column {
             display: flex;
@@ -122,9 +128,6 @@
             width: 180px;
             overflow-y: auto;
             max-height: 100%;
-            position: sticky;
-            top: 0;
-            align-self: flex-start;
         }
         #output {
             background: #000;
@@ -139,11 +142,23 @@
             padding: 10px;
             margin: 10px 0;
         }
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            padding: 12px 20px;
+            background: #333;
+            margin: 0;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
-    <h1>Drunk Simulator - Map Editor</h1>
-
     <div class="container">
         <!-- Left: Tile Palette (Vertical) -->
         <div class="palette-column">
@@ -203,6 +218,14 @@
                 <div class="palette-tile" data-type="13" style="background: #9B30FF;"></div>
                 <span style="font-size: 9px;">POI</span>
             </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile" data-type="14" style="background: #2C5F2D;"></div>
+                <span style="font-size: 9px;">Chair</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile" data-type="15" style="background: #228B22;"></div>
+                <span style="font-size: 9px;">Cash Reg</span>
+            </div>
         </div>
 
         <!-- Center: Grid -->
@@ -212,7 +235,14 @@
 
         <!-- Right: Buttons (Vertical) -->
         <div class="buttons-column">
+            <button class="cta-button" onclick="saveMap()">💾 Save Map</button>
             <button class="cta-button" onclick="copyToClipboard()">📋 Copy Map</button>
+
+            <div style="margin: 10px 0; padding: 10px; background: #333; border-radius: 3px;">
+                <div style="font-size: 12px; margin-bottom: 5px;">Saved Maps:</div>
+                <div id="saved-maps-list" style="max-height: 150px; overflow-y: auto; font-size: 11px;"></div>
+            </div>
+
             <div class="zoom-controls">
                 <button onclick="zoomIn()">Zoom +</button>
                 <button onclick="zoomOut()">Zoom -</button>
@@ -226,7 +256,7 @@
         </div>
     </div>
 
-    <div style="margin-top: 10px; padding: 10px; background: #333;">
+    <div class="status-bar">
         <span id="status">Map ready. Paint tiles to edit.</span>
     </div>
 
@@ -245,7 +275,9 @@
             10: '#ff0000', // Employee spawn marker
             11: '#FFA500', // Patron spawn marker
             12: '#00FFFF', // Camera start marker (cyan)
-            13: '#9B30FF'  // POI - Point of Interest (purple)
+            13: '#9B30FF', // POI - Point of Interest (purple)
+            14: '#2C5F2D', // Chair - dark forest green
+            15: '#228B22'  // Cash Register - money green
         };
 
         const COLS = 32;
@@ -617,9 +649,93 @@
             container.scrollLeft = 0;
         }
 
+        // Save/Load functions
+        function saveMap() {
+            const mapName = prompt('Enter a name for this map:');
+            if (!mapName) {
+                document.getElementById('status').textContent = '❌ Save cancelled';
+                return;
+            }
+
+            const mapData = {
+                name: mapName,
+                grid: grid,
+                timestamp: Date.now()
+            };
+
+            // Get existing maps
+            const savedMaps = JSON.parse(localStorage.getItem('drunkSimMaps') || '[]');
+
+            // Check if name exists
+            const existingIndex = savedMaps.findIndex(m => m.name === mapName);
+            if (existingIndex >= 0) {
+                if (!confirm(`Map "${mapName}" already exists. Overwrite?`)) {
+                    document.getElementById('status').textContent = '❌ Save cancelled';
+                    return;
+                }
+                savedMaps[existingIndex] = mapData;
+            } else {
+                savedMaps.push(mapData);
+            }
+
+            localStorage.setItem('drunkSimMaps', JSON.stringify(savedMaps));
+            document.getElementById('status').textContent = `✅ Map "${mapName}" saved!`;
+            updateSavedMapsList();
+        }
+
+        function loadMap(mapName) {
+            const savedMaps = JSON.parse(localStorage.getItem('drunkSimMaps') || '[]');
+            const mapData = savedMaps.find(m => m.name === mapName);
+
+            if (mapData) {
+                saveHistory(); // Save current state to undo
+                grid = mapData.grid;
+                renderGrid();
+                document.getElementById('status').textContent = `✅ Loaded map "${mapName}"`;
+            } else {
+                document.getElementById('status').textContent = `❌ Map "${mapName}" not found`;
+            }
+        }
+
+        function deleteMap(mapName) {
+            if (!confirm(`Delete map "${mapName}"?`)) return;
+
+            const savedMaps = JSON.parse(localStorage.getItem('drunkSimMaps') || '[]');
+            const filtered = savedMaps.filter(m => m.name !== mapName);
+            localStorage.setItem('drunkSimMaps', JSON.stringify(filtered));
+
+            document.getElementById('status').textContent = `🗑️ Deleted map "${mapName}"`;
+            updateSavedMapsList();
+        }
+
+        function updateSavedMapsList() {
+            const savedMaps = JSON.parse(localStorage.getItem('drunkSimMaps') || '[]');
+            const listEl = document.getElementById('saved-maps-list');
+
+            if (savedMaps.length === 0) {
+                listEl.innerHTML = '<div style="color: #888; font-style: italic;">No saved maps</div>';
+                return;
+            }
+
+            listEl.innerHTML = savedMaps.map(map => {
+                const date = new Date(map.timestamp).toLocaleString();
+                return `
+                    <div style="margin-bottom: 8px; padding: 5px; background: #444; border-radius: 3px;">
+                        <div style="font-weight: bold;">${map.name}</div>
+                        <div style="font-size: 9px; color: #aaa;">${date}</div>
+                        <div style="margin-top: 3px;">
+                            <button onclick="loadMap('${map.name}')" style="font-size: 10px; padding: 3px 6px;">Load</button>
+                            <button onclick="deleteMap('${map.name}')" style="font-size: 10px; padding: 3px 6px; background: #a00;">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         // Initialize
         initGrid();
         renderGrid();
+        updateSavedMapsList();
 
         // Position viewport (no animation)
         requestAnimationFrame(() => {

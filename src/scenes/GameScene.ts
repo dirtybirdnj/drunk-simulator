@@ -16,6 +16,9 @@ export class GameScene extends Phaser.Scene {
     private beerTaps: Array<{x: number, y: number}> = [];
     private pois: Array<{x: number, y: number}> = []; // Points of Interest
     private barServiceZones: Array<{x: number, y: number, width: number, height: number, tapIndex: number}> = [];
+    private chairs: Array<{x: number, y: number, occupied: boolean, occupant: any}> = [];
+    private cashRegisters: Array<{x: number, y: number}> = [];
+    private moneyParticles: Array<{x: number, y: number, alpha: number, vy: number, life: number}> = [];
     private bartender!: Phaser.Physics.Arcade.Sprite;
     private bartenderLineGraphics!: Phaser.GameObjects.Graphics;
     private pouringBarGraphics!: Phaser.GameObjects.Graphics;
@@ -43,7 +46,9 @@ export class GameScene extends Phaser.Scene {
         EMPLOYEE_SPAWN: 10,
         PATRON_SPAWN: 11,
         CAMERA_START: 12,
-        POI: 13  // Point of Interest - attracts patrons
+        POI: 13,  // Point of Interest - attracts patrons
+        CHAIR: 14,  // Dark forest green - smoking chairs
+        CASH_REGISTER: 15  // Money green - bartenders ring up sales
     };
 
     private patronSpawnTimer!: Phaser.Time.TimerEvent;
@@ -57,11 +62,35 @@ export class GameScene extends Phaser.Scene {
         [this.TILES.BAR_COUNTER]: 0x654321, // Dark brown counter
         [this.TILES.STAFF_ZONE]: 0x4169E1,  // Blue staff area
         [this.TILES.STAIRS]: 0x6B5F47,      // Grey-brown stairs
-        [this.TILES.BEER_TAP]: 0xFFFF00     // Yellow beer tap
+        [this.TILES.BEER_TAP]: 0xFFFF00,    // Yellow beer tap
+        [this.TILES.CHAIR]: 0x2C5F2D,       // Dark forest green - smoking chairs
+        [this.TILES.CASH_REGISTER]: 0x228B22  // Money green - cash register
     };
+
+    private selectedMapData: number[][] | null = null;
 
     constructor() {
         super({ key: 'GameScene' });
+    }
+
+    init(data: { selectedMap?: string | null }) {
+        // Load selected map from localStorage if provided
+        if (data.selectedMap) {
+            const savedMapsStr = localStorage.getItem('drunkSimMaps') || '[]';
+            const savedMaps = JSON.parse(savedMapsStr);
+            const mapData = savedMaps.find((m: any) => m.name === data.selectedMap);
+
+            if (mapData && mapData.grid) {
+                this.selectedMapData = mapData.grid;
+                console.log(`📍 Loaded map: ${data.selectedMap}`);
+            } else {
+                console.warn(`⚠️ Map "${data.selectedMap}" not found, using default`);
+                this.selectedMapData = null;
+            }
+        } else {
+            console.log('📍 Using default map');
+            this.selectedMapData = null;
+        }
     }
 
     preload() {
@@ -207,53 +236,51 @@ export class GameScene extends Phaser.Scene {
         // HOW TO UPDATE THIS MAP:
         // 1. Open http://localhost:3000/map-editor.html
         // 2. Design your map using the visual editor
-        // 3. Click the blue "Copy Map" button
-        // 4. Search for "PASTE MAP HERE" in this file
-        // 5. Select the entire map array and paste
-        // 6. Save - Vite will auto-reload!
+        // 3. Click the blue "Copy Map" button or "Save Map"
+        // 4. Use the boot menu to load your saved map!
         // ============================================================
 
-        // PASTE MAP HERE - Replace this entire array with map editor output
+        // Use selected map if available, otherwise use default
 const map: number[][] = [
     [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
-    [3,2,2,2,2,5,6,6,9,5,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
-    [3,2,2,2,2,5,6,6,6,5,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
-    [3,2,2,2,2,5,5,5,5,5,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
-    [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
-    [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
-    [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
-    [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
-    [3,3,3,3,3,3,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,14,2,2,2,14,14,14,14,14,2,2,2,2,2,2,2,2,2,2,14,14,14,2,14,14,14,14,2,2,2,3],
+    [3,14,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,14,2,2,2,2,2,2,2,2,2,2,14,2,3],
+    [3,14,2,2,2,2,2,14,2,2,2,14,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
+    [3,14,2,2,2,2,2,2,14,2,14,2,2,2,2,2,2,2,2,2,14,14,14,14,14,2,14,14,14,2,14,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
     [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
     [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
-    [3,5,5,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
-    [3,6,6,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
-    [9,6,6,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,5,5,5,5,5,3],
-    [3,6,10,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,6,6,6,6,6,6,3],
-    [3,6,6,5,1,1,1,1,1,1,1,1,1,1,13,1,1,1,1,1,1,1,5,6,10,6,6,6,6,6,6,3],
-    [3,6,6,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,9,6,6,3,3,9,3,3,3,3],
-    [9,6,10,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,3,3,3,3,3,3,3],
-    [3,6,6,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,3,3,3,3,3,3,3],
-    [3,6,6,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,3,3,3,3,3,3,3],
-    [3,5,5,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,3,3,3,3,3,3,3],
-    [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,10,6,6,3,3,3,3,3,3],
-    [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,6,3,3,3,3,3,3],
+    [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+    [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+    [3,5,5,5,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+    [3,6,6,6,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+    [3,6,6,6,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+    [9,6,10,6,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,5,5,5,5,5,3],
+    [3,6,6,6,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,6,6,10,6,6,6,3],
+    [3,6,6,6,15,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,6,6,6,6,6,6,3],
+    [3,6,6,6,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,9,6,6,5,5,9,5,5,5,3],
+    [9,6,10,6,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,10,5,1,1,1,1,1,3],
+    [3,6,6,6,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,5,1,1,1,1,1,3],
+    [3,6,6,6,5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,15,6,6,5,1,1,1,1,1,3],
+    [3,5,5,5,5,1,1,1,1,1,1,1,1,1,1,13,1,1,1,1,1,1,5,5,5,5,1,1,1,1,1,3],
+    [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,1,1,1,1,3],
+    [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,1,1,1,1,3],
     [3,3,3,3,3,3,3,3,3,3,3,3,3,3,7,7,7,7,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
     [3,1,1,1,1,1,1,1,1,1,1,1,1,3,7,7,7,7,3,1,1,1,1,1,1,1,1,1,1,1,1,3],
     [3,1,1,1,1,1,1,1,1,1,1,1,1,3,7,7,7,7,3,1,1,1,1,1,1,1,1,1,1,1,1,3],
     [3,1,1,1,1,1,1,1,1,1,1,1,1,3,7,7,7,7,3,1,1,1,1,1,1,1,1,1,1,1,1,3],
-    [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,13,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+    [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,13,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
     [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
     [3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [11,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [11,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11],
-    [0,0,0,0,0,0,0,0,11,0,0,0,0,0,11,0,0,0,0,0,11,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11,0,0,0,0,0,0],
-    [11,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,0,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,11,0,0,11,0,0,11,0,0,11,0,0,11,0,0,0,0,0,0,0,11,0,0,11,0,11,0,0,11,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -273,7 +300,6 @@ const map: number[][] = [
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 ];
-
         // Find player start position (marked with 8)
         let playerStartCol = 16;
         let playerStartRow = 31;
@@ -352,6 +378,26 @@ const map: number[][] = [
                     console.log(`🎯 POI #${this.pois.length - 1} at (${col * this.TILE_SIZE + 16}, ${row * this.TILE_SIZE + 16})`);
                 }
 
+                // Store chair locations
+                if (tileType === this.TILES.CHAIR) {
+                    this.chairs.push({
+                        x: col * this.TILE_SIZE + 16,
+                        y: row * this.TILE_SIZE + 16,
+                        occupied: false,
+                        occupant: null
+                    });
+                    console.log(`🪑 Chair #${this.chairs.length - 1} at (${col * this.TILE_SIZE + 16}, ${row * this.TILE_SIZE + 16})`);
+                }
+
+                // Store cash register locations
+                if (tileType === this.TILES.CASH_REGISTER) {
+                    this.cashRegisters.push({
+                        x: col * this.TILE_SIZE + 16,
+                        y: row * this.TILE_SIZE + 16
+                    });
+                    console.log(`💰 Cash register at (${col * this.TILE_SIZE + 16}, ${row * this.TILE_SIZE + 16})`);
+                }
+
                 // Detect bar counters and create service zones (patrons stand adjacent to counter)
                 if (tileType === this.TILES.BAR_COUNTER) {
                     // Check if there's a floor tile to the left (service zone)
@@ -369,6 +415,26 @@ const map: number[][] = [
                         this.barServiceZones.push({
                             x: (col + 1) * this.TILE_SIZE,
                             y: row * this.TILE_SIZE,
+                            width: this.TILE_SIZE,
+                            height: this.TILE_SIZE,
+                            tapIndex: -1  // Will be assigned in second pass
+                        });
+                    }
+                    // Check if there's a floor tile above
+                    if (row > 0 && map[row - 1][col] === this.TILES.BAR_FLOOR) {
+                        this.barServiceZones.push({
+                            x: col * this.TILE_SIZE,
+                            y: (row - 1) * this.TILE_SIZE,
+                            width: this.TILE_SIZE,
+                            height: this.TILE_SIZE,
+                            tapIndex: -1  // Will be assigned in second pass
+                        });
+                    }
+                    // Check if there's a floor tile below
+                    if (row < this.MAP_ROWS - 1 && map[row + 1][col] === this.TILES.BAR_FLOOR) {
+                        this.barServiceZones.push({
+                            x: col * this.TILE_SIZE,
+                            y: (row + 1) * this.TILE_SIZE,
                             width: this.TILE_SIZE,
                             height: this.TILE_SIZE,
                             tapIndex: -1  // Will be assigned in second pass
@@ -499,6 +565,7 @@ const map: number[][] = [
                 bartender.setData('scanTimer', 0);  // Timer for scanning behavior
                 bartender.setData('scanDirection', 1);  // 1 = clockwise, -1 = counterclockwise
                 bartender.setData('barIndex', index);  // Which bar this bartender works at
+                bartender.setData('reservedTapIndex', -1);  // No tap reserved initially
                 console.log(`👔 Bartender ${index} spawned at (${Math.round(spawn.x)}, ${Math.round(spawn.y)}), facing ${(initialFacing * 180 / Math.PI).toFixed(0)}°`);
             });
             console.log(`👔 Spawned ${employeeSpawns.length} bartenders total`);
@@ -643,11 +710,24 @@ const map: number[][] = [
             this.playerBeerIcon.setPosition(this.player.x, this.player.y - 20);
         }
 
-        // Space key to order drink
+        // Auto-order when player is idle and in a service zone
+        if (playerState === 'idle') {
+            const inServiceZone = this.barServiceZones.some(zone =>
+                this.player.x >= zone.x && this.player.x < zone.x + zone.width &&
+                this.player.y >= zone.y && this.player.y < zone.y + zone.height
+            );
+
+            if (inServiceZone) {
+                this.player.setData('state', 'waiting');
+                console.log('🙋 Player entered service zone, waiting for a drink');
+            }
+        }
+
+        // Space key to manually order drink (if not in a service zone)
         if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
             if (playerState === 'idle') {
                 this.player.setData('state', 'waiting');
-                console.log('🙋 Player is waiting for a drink');
+                console.log('🙋 Player manually requested a drink');
             }
         }
 
@@ -942,22 +1022,48 @@ const map: number[][] = [
                             }
                         });
 
-                        // Must be within 1.5 tiles (48px) to start conversation
+                        // Must be on adjacent tiles to start conversation
                         if (closestTarget && closestDist < 48) {
-                            // Close enough to start talking
-                            npc.setVelocity(0, 0);
-                            npc.setData('state', 'socializing');
-                            npc.setData('socialTarget', closestTarget);
-                            npc.setData('socialStartTime', Date.now());
+                            // Check if on adjacent tiles (touching)
+                            const npcGridX = Math.floor(npc.x / this.TILE_SIZE);
+                            const npcGridY = Math.floor(npc.y / this.TILE_SIZE);
+                            const targetGridX = Math.floor(closestTarget.x / this.TILE_SIZE);
+                            const targetGridY = Math.floor(closestTarget.y / this.TILE_SIZE);
 
-                            // If talking to player, set player to socializing too
-                            if (closestTarget === this.player) {
-                                this.player.setData('state', 'socializing');
-                                this.player.setData('socialTarget', npc);
-                                this.player.setData('socialStartTime', Date.now());
-                                console.log(`💬 Patron started conversation with PLAYER! Both beers will drain over 10 seconds`);
+                            const gridDistX = Math.abs(npcGridX - targetGridX);
+                            const gridDistY = Math.abs(npcGridY - targetGridY);
+
+                            // Must be on adjacent tiles (touching), not diagonal
+                            const isAdjacent = (gridDistX <= 1 && gridDistY <= 1) && (gridDistX + gridDistY <= 1);
+
+                            if (isAdjacent) {
+                                // Close enough and on adjacent tiles - start talking
+                                npc.setVelocity(0, 0);
+                                npc.setData('state', 'socializing');
+                                npc.setData('socialTarget', closestTarget);
+                                npc.setData('socialStartTime', Date.now());
+
+                                // If talking to player, set player to socializing too
+                                if (closestTarget === this.player) {
+                                    this.player.setData('state', 'socializing');
+                                    this.player.setData('socialTarget', npc);
+                                    this.player.setData('socialStartTime', Date.now());
+                                    console.log(`💬 Patron started conversation with PLAYER! Both beers will drain over 10 seconds`);
+                                } else {
+                                    console.log(`💬 Patron started conversation! Beer: ${beerAmount}% → Will consume 25% over 10 seconds`);
+                                }
                             } else {
-                                console.log(`💬 Patron started conversation! Beer: ${beerAmount}% → Will consume 25% over 10 seconds`);
+                                // Move toward target to get on adjacent tile
+                                const dx = closestTarget.x - npc.x;
+                                const dy = closestTarget.y - npc.y;
+                                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                                // Apply separation force
+                                const separation = this.getSeparationForce(npc, drunkLevel);
+                                const moveX = (dx / dist) * npcSpeed + separation.x;
+                                const moveY = (dy / dist) * npcSpeed + separation.y;
+
+                                npc.setVelocity(moveX, moveY);
                             }
                         } else if (closestTarget) {
                             // Move toward target to talk
@@ -1014,6 +1120,45 @@ const map: number[][] = [
                         return; // Exit early
                     }
 
+                    // Check if patrons are still on adjacent tiles
+                    if (socialTarget && socialTarget.active) {
+                        const npcGridX = Math.floor(npc.x / this.TILE_SIZE);
+                        const npcGridY = Math.floor(npc.y / this.TILE_SIZE);
+                        const targetGridX = Math.floor(socialTarget.x / this.TILE_SIZE);
+                        const targetGridY = Math.floor(socialTarget.y / this.TILE_SIZE);
+
+                        const gridDistX = Math.abs(npcGridX - targetGridX);
+                        const gridDistY = Math.abs(npcGridY - targetGridY);
+
+                        // Must be on adjacent tiles (touching), not diagonal
+                        const isAdjacent = (gridDistX <= 1 && gridDistY <= 1) && (gridDistX + gridDistY <= 1);
+
+                        if (!isAdjacent) {
+                            console.log('💔 Patrons moved apart, breaking conversation');
+
+                            // Calculate partial beer consumption based on time elapsed
+                            const elapsed = Date.now() - socialStartTime;
+                            const percentComplete = Math.min(1, elapsed / 10000);
+                            const beerConsumed = 25 * percentComplete;
+
+                            const currentBeer = npc.getData('beerAmount');
+                            npc.setData('beerAmount', Math.max(0, currentBeer - beerConsumed));
+
+                            // Reset both participants
+                            npc.setData('state', 'has_beer');
+                            npc.setData('socialTarget', null);
+
+                            if (socialTarget.getData('socialTarget') === npc) {
+                                const targetBeer = socialTarget.getData('beerAmount');
+                                socialTarget.setData('beerAmount', Math.max(0, targetBeer - beerConsumed));
+                                socialTarget.setData('state', 'has_beer');
+                                socialTarget.setData('socialTarget', null);
+                            }
+
+                            return; // Exit early
+                        }
+                    }
+
                     // Check if 10 seconds have passed
                     if (Date.now() - socialStartTime > 10000) {
                         // Consume 1/4 of drink (25%)
@@ -1041,24 +1186,61 @@ const map: number[][] = [
                         npc.setData('socialTarget', null);
                     }
                 } else if (state === 'going_to_patio') {
-                    // Patron heading to patio to smoke
-                    // Find a patio tile (type 2)
-                    const patioTargetX = (5 + Math.random() * 20) * this.TILE_SIZE + 16;
-                    const patioTargetY = (2 + Math.random() * 4) * this.TILE_SIZE + 16;
+                    // Patron heading to patio to smoke - look for an available chair
+                    let targetChair = npc.getData('targetChair');
 
-                    const dx = patioTargetX - npc.x;
-                    const dy = patioTargetY - npc.y;
+                    // If no target chair assigned yet, find one
+                    if (!targetChair) {
+                        // Find closest unoccupied chair
+                        let closestChair = null;
+                        let closestDist = Infinity;
+
+                        this.chairs.forEach((chair) => {
+                            if (!chair.occupied) {
+                                const dx = chair.x - npc.x;
+                                const dy = chair.y - npc.y;
+                                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                                if (dist < closestDist) {
+                                    closestDist = dist;
+                                    closestChair = chair;
+                                }
+                            }
+                        });
+
+                        if (closestChair) {
+                            // Found an available chair
+                            targetChair = closestChair;
+                            npc.setData('targetChair', targetChair);
+                            console.log(`🪑 Patron found chair at (${targetChair.x}, ${targetChair.y})`);
+                        } else {
+                            // No chairs available - give up and smoke in place
+                            console.log('😤 No chairs available, smoking in place');
+                            npc.setVelocity(0, 0);
+                            npc.setData('state', 'smoking');
+                            npc.setData('puffCount', 0);
+                            npc.setData('puffTimer', Date.now());
+                            return;
+                        }
+                    }
+
+                    // Move toward target chair
+                    const dx = targetChair.x - npc.x;
+                    const dy = targetChair.y - npc.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
-                    if (dist < 32) {
-                        // Arrived at patio - start smoking
+                    if (dist < 16) {
+                        // Arrived at chair - occupy it and start smoking
                         npc.setVelocity(0, 0);
+                        targetChair.occupied = true;
+                        targetChair.occupant = npc;
+                        npc.setData('occupiedChair', targetChair);
                         npc.setData('state', 'smoking');
                         npc.setData('puffCount', 0);
                         npc.setData('puffTimer', Date.now());
-                        console.log('🚬 Patron arrived at patio, starting to smoke');
+                        console.log('🚬 Patron sat in chair, starting to smoke');
                     } else {
-                        // Move toward patio with reduced separation force
+                        // Move toward chair with reduced separation force
                         const separation = this.getSeparationForce(npc, drunkLevel);
                         const moveX = (dx / dist) * npcSpeed + separation.x * 0.2;
                         const moveY = (dy / dist) * npcSpeed + separation.y * 0.2;
@@ -1077,7 +1259,15 @@ const map: number[][] = [
                     const timeSincePuff = now - puffTimer;
 
                     if (puffCount >= totalPuffs) {
-                        // Done smoking - return to has_beer behavior
+                        // Done smoking - release chair and return to has_beer behavior
+                        const occupiedChair = npc.getData('occupiedChair');
+                        if (occupiedChair) {
+                            occupiedChair.occupied = false;
+                            occupiedChair.occupant = null;
+                            npc.setData('occupiedChair', null);
+                            npc.setData('targetChair', null);
+                            console.log('🪑 Patron vacated chair');
+                        }
                         npc.setData('state', 'has_beer');
                         npc.setData('puffCount', 0);
                         console.log('🚬 Patron finished smoking, going back inside');
@@ -1091,12 +1281,14 @@ const map: number[][] = [
                         } else {
                             // Create smoke particles while exhaling
                             if (Math.random() < 0.3) { // 30% chance each frame
+                                // Randomly choose left or right direction
+                                const direction = Math.random() < 0.5 ? -1 : 1;
                                 this.smokeParticles.push({
                                     x: npc.x + (Math.random() - 0.5) * 10,
                                     y: npc.y - 15,
                                     alpha: 0.6,
-                                    vx: (Math.random() - 0.5) * 20,
-                                    vy: -20 - Math.random() * 20,
+                                    vx: direction * (40 + Math.random() * 30), // 40-70px/s horizontal
+                                    vy: (Math.random() - 0.5) * 10, // Minimal vertical drift
                                     life: 1.0
                                 });
                             }
@@ -1138,6 +1330,48 @@ const map: number[][] = [
                             }
                         });
                     }
+                } else if (state === 'migrating') {
+                    // Patron is migrating away from bar after getting beer
+                    const migrationStartTime = npc.getData('migrationStartTime');
+                    const migrationDuration = 3000; // 3 seconds
+
+                    // Check if migration period is over
+                    if (Date.now() - migrationStartTime > migrationDuration) {
+                        npc.setData('state', 'has_beer');
+                        console.log('✅ Patron finished migrating, now has_beer');
+                        return;
+                    }
+
+                    // Find direction away from nearest service zone
+                    let nearestZoneDist = Infinity;
+                    let nearestZoneX = 0;
+                    let nearestZoneY = 0;
+
+                    this.barServiceZones.forEach(zone => {
+                        const zoneCenterX = zone.x + zone.width / 2;
+                        const zoneCenterY = zone.y + zone.height / 2;
+                        const dx = zoneCenterX - npc.x;
+                        const dy = zoneCenterY - npc.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+
+                        if (dist < nearestZoneDist) {
+                            nearestZoneDist = dist;
+                            nearestZoneX = zoneCenterX;
+                            nearestZoneY = zoneCenterY;
+                        }
+                    });
+
+                    // Move away from nearest service zone
+                    const awayDx = npc.x - nearestZoneX;
+                    const awayDy = npc.y - nearestZoneY;
+                    const awayDist = Math.sqrt(awayDx * awayDx + awayDy * awayDy);
+
+                    if (awayDist > 0.1) {
+                        const separation = this.getSeparationForce(npc, drunkLevel);
+                        const moveX = (awayDx / awayDist) * npcSpeed + separation.x;
+                        const moveY = (awayDy / awayDist) * npcSpeed + separation.y;
+                        npc.setVelocity(moveX, moveY);
+                    }
                 }
             }
         });
@@ -1148,30 +1382,31 @@ const map: number[][] = [
 
             const bartenderState = bartender.getData('state');
 
+            // Bartenders ALWAYS scan by rotating - regardless of state
+            const scanDirection = bartender.getData('scanDirection') || 1;
+            const currentFacing = bartender.getData('facingAngle');
+
+            // Scan speed: rotate ~60 degrees per second at 60fps
+            const scanSpeed = Math.PI / 3 / 60;  // 60 degrees/sec
+            const newFacing = currentFacing + (scanSpeed * scanDirection);
+
+            // Check if vision cone edge is hitting a wall
+            const coneHalfAngle = Math.PI / 2.5 / 2;  // Half of cone width
+            const leftEdge = newFacing - coneHalfAngle;
+            const rightEdge = newFacing + coneHalfAngle;
+
+            const hitWallLeft = this.isWallInDirection(bartender.x, bartender.y, leftEdge, 160);
+            const hitWallRight = this.isWallInDirection(bartender.x, bartender.y, rightEdge, 160);
+
+            // Reverse direction if either edge hits a wall
+            if ((scanDirection > 0 && hitWallRight) || (scanDirection < 0 && hitWallLeft)) {
+                bartender.setData('scanDirection', -scanDirection);
+            } else {
+                // Update facing angle
+                bartender.setData('facingAngle', newFacing);
+            }
+
             if (bartenderState === 'idle') {
-                // Idle bartenders scan by rotating until they hit a wall, then reverse
-                const scanDirection = bartender.getData('scanDirection') || 1;
-                const currentFacing = bartender.getData('facingAngle');
-
-                // Scan speed: rotate ~60 degrees per second at 60fps
-                const scanSpeed = Math.PI / 3 / 60;  // 60 degrees/sec
-                const newFacing = currentFacing + (scanSpeed * scanDirection);
-
-                // Check if vision cone edge is hitting a wall
-                const coneHalfAngle = Math.PI / 2.5 / 2;  // Half of cone width
-                const leftEdge = newFacing - coneHalfAngle;
-                const rightEdge = newFacing + coneHalfAngle;
-
-                const hitWallLeft = this.isWallInDirection(bartender.x, bartender.y, leftEdge, 160);
-                const hitWallRight = this.isWallInDirection(bartender.x, bartender.y, rightEdge, 160);
-
-                // Reverse direction if either edge hits a wall
-                if ((scanDirection > 0 && hitWallRight) || (scanDirection < 0 && hitWallLeft)) {
-                    bartender.setData('scanDirection', -scanDirection);
-                } else {
-                    // Update facing angle
-                    bartender.setData('facingAngle', newFacing);
-                }
 
                 // Find closest waiting customer in bartender's vision cone
                 const allWaitingCustomers: any[] = [];
@@ -1248,21 +1483,42 @@ const map: number[][] = [
                     bartender.setData('target', closestCustomer);
                 }
             } else if (bartenderState === 'going_to_tap') {
-                // Find closest beer tap
-                let closestTap = this.beerTaps[0];
+                // Find closest available (unreserved) beer tap
+                let closestTapIndex = -1;
                 let closestDist = Infinity;
-                this.beerTaps.forEach(tap => {
-                    const dist = Math.sqrt(
-                        Math.pow(tap.x - bartender.x, 2) +
-                        Math.pow(tap.y - bartender.y, 2)
-                    );
-                    if (dist < closestDist) {
-                        closestDist = dist;
-                        closestTap = tap;
+
+                this.beerTaps.forEach((tap, index) => {
+                    // Check if this tap is already reserved by another bartender
+                    const tapReserved = this.npcs.children.entries.some((b: any) => {
+                        return b !== bartender &&
+                               b.getData('type') === 'staff' &&
+                               b.getData('reservedTapIndex') === index;
+                    });
+
+                    if (!tapReserved) {
+                        const dist = Math.sqrt(
+                            Math.pow(tap.x - bartender.x, 2) +
+                            Math.pow(tap.y - bartender.y, 2)
+                        );
+                        if (dist < closestDist) {
+                            closestDist = dist;
+                            closestTapIndex = index;
+                        }
                     }
                 });
 
-                // Move to closest tap
+                // If no available tap, wait
+                if (closestTapIndex === -1) {
+                    bartender.setVelocity(0, 0);
+                    console.log('⏰ No available taps, bartender waiting...');
+                    return;
+                }
+
+                // Reserve this tap
+                bartender.setData('reservedTapIndex', closestTapIndex);
+
+                // Move to closest available tap
+                const closestTap = this.beerTaps[closestTapIndex];
                 const dx = closestTap.x - bartender.x;
                 const dy = closestTap.y - bartender.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
@@ -1279,7 +1535,7 @@ const map: number[][] = [
                     bartender.setVelocity(0, 0);
                     bartender.setData('state', 'pouring');
                     bartender.setData('pourTimer', Date.now() + 4000);
-                    console.log('🍺 Bartender reached tap, starting to pour (4 seconds)');
+                    console.log(`🍺 Bartender reached tap ${closestTapIndex}, starting to pour (4 seconds)`);
                 }
             } else if (bartenderState === 'pouring') {
                 bartender.setVelocity(0, 0);
@@ -1298,8 +1554,24 @@ const map: number[][] = [
                     // Update facing angle to look at target
                     bartender.setData('facingAngle', Math.atan2(dy, dx));
 
-                    // Bartenders can serve patrons up to 2 tiles away (64px)
-                    if (dist <= 64) {
+                    // Check if bartender is touching a counter tile
+                    const bartenderGridX = Math.floor(bartender.x / this.TILE_SIZE);
+                    const bartenderGridY = Math.floor(bartender.y / this.TILE_SIZE);
+
+                    // Check adjacent tiles for counter
+                    const isTouchingCounter = this.walls.children.entries.some((wall: any) => {
+                        const wallGridX = Math.floor(wall.x / this.TILE_SIZE);
+                        const wallGridY = Math.floor(wall.y / this.TILE_SIZE);
+
+                        // Check if wall is adjacent (1 tile away in any direction)
+                        const gridDistX = Math.abs(wallGridX - bartenderGridX);
+                        const gridDistY = Math.abs(wallGridY - bartenderGridY);
+
+                        return (gridDistX <= 1 && gridDistY <= 1) && (gridDistX + gridDistY > 0);
+                    });
+
+                    // Can serve if touching counter (simplified handoff)
+                    if (isTouchingCounter) {
                         bartender.setVelocity(0, 0);
                         target.setData('beerAmount', 100);
                         target.setData('waitStartTime', 0); // Reset wait timer!
@@ -1315,30 +1587,110 @@ const map: number[][] = [
                                 beerIcon.setVisible(true);
                             }
 
-                            // Smokers go to patio, non-smokers wander/socialize
+                            // Smokers go to patio, non-smokers migrate away from bar first
                             const isSmoker = target.getData('isSmoker');
                             if (isSmoker) {
                                 target.setData('state', 'going_to_patio');
                                 console.log('🚬 Patron going to patio for a smoke!');
                             } else {
-                                target.setData('state', 'has_beer');
-                                console.log('🍺 Bartender delivered beer to patron!');
+                                target.setData('state', 'migrating');
+                                target.setData('migrationStartTime', Date.now());
+                                console.log('🚶 Patron migrating away from bar!');
                             }
                         }
 
                         bartender.setData('hasBeer', false);
                         bartender.setData('target', null);
-                        bartender.setData('state', 'idle');
+                        bartender.setData('state', 'going_to_register');
+                        bartender.setData('reservedTapIndex', -1); // Release tap reservation
+                        console.log('💰 Bartender going to ring up sale');
                     } else {
-                        // Move closer to patron
-                        const separation = this.getSeparationForce(bartender, 0);
-                        bartender.setVelocity(
-                            (dx / dist) * npcSpeed + separation.x,
-                            (dy / dist) * npcSpeed + separation.y
-                        );
+                        // Move closer to counter
+                        // Find nearest counter tile
+                        let closestCounter: any = null;
+                        let closestDist = Infinity;
+
+                        this.walls.children.entries.forEach((wall: any) => {
+                            const wallDist = Math.sqrt(
+                                Math.pow(wall.x - bartender.x, 2) +
+                                Math.pow(wall.y - bartender.y, 2)
+                            );
+
+                            if (wallDist < closestDist) {
+                                closestDist = wallDist;
+                                closestCounter = wall;
+                            }
+                        });
+
+                        if (closestCounter) {
+                            const counterDx = closestCounter.x - bartender.x;
+                            const counterDy = closestCounter.y - bartender.y;
+                            const counterDist = Math.sqrt(counterDx * counterDx + counterDy * counterDy);
+
+                            if (counterDist > 0.1) {
+                                bartender.setVelocity(
+                                    (counterDx / counterDist) * npcSpeed,
+                                    (counterDy / counterDist) * npcSpeed
+                                );
+                            }
+                        }
                     }
                 } else {
                     bartender.setData('state', 'idle');
+                    bartender.setData('reservedTapIndex', -1); // Release tap reservation
+                }
+            } else if (bartenderState === 'going_to_register') {
+                // Bartender going to cash register after serving
+                if (this.cashRegisters.length === 0) {
+                    // No cash register - skip and return to idle
+                    bartender.setData('state', 'idle');
+                    return;
+                }
+
+                // Find closest cash register
+                let closestRegister = this.cashRegisters[0];
+                let closestDist = Infinity;
+                this.cashRegisters.forEach(register => {
+                    const dist = Math.sqrt(
+                        Math.pow(register.x - bartender.x, 2) +
+                        Math.pow(register.y - bartender.y, 2)
+                    );
+                    if (dist < closestDist) {
+                        closestDist = dist;
+                        closestRegister = register;
+                    }
+                });
+
+                // Find a tile adjacent to the register
+                const targetX = closestRegister.x;
+                const targetY = closestRegister.y + this.TILE_SIZE; // Stand below the register
+
+                const dx = targetX - bartender.x;
+                const dy = targetY - bartender.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 20) {
+                    // Reached register - create $ animation and return to idle
+                    bartender.setVelocity(0, 0);
+
+                    // Create $ particle animation
+                    this.moneyParticles.push({
+                        x: closestRegister.x,
+                        y: closestRegister.y,
+                        alpha: 1.0,
+                        vy: -40, // Rise upward
+                        life: 1.5 // 1.5 seconds
+                    });
+
+                    bartender.setData('state', 'idle');
+                    console.log('💰 Ka-ching! Sale registered');
+                } else {
+                    // Move toward register
+                    bartender.setVelocity(
+                        (dx / dist) * npcSpeed,
+                        (dy / dist) * npcSpeed
+                    );
+                    bartender.setData('facingAngle', Math.atan2(dy, dx));
                 }
             }
         });
@@ -1494,7 +1846,41 @@ const map: number[][] = [
             // Draw particle if still alive
             if (particle.life > 0) {
                 this.conversationGraphics.fillStyle(0xCCCCCC, particle.alpha);
-                this.conversationGraphics.fillCircle(particle.x, particle.y, 3 + (1 - particle.life) * 2);
+                // Bigger smoke particles: start at 6px, expand to 10px as they fade
+                this.conversationGraphics.fillCircle(particle.x, particle.y, 6 + (1 - particle.life) * 4);
+                return true;
+            }
+            return false;
+        });
+
+        // Update and render money particles ($)
+        this.moneyParticles = this.moneyParticles.filter(particle => {
+            // Update particle position - rise upward
+            particle.y += particle.vy * 0.016;  // Assume ~60fps
+            particle.life -= 0.016;  // Fade over 1.5 seconds
+            particle.alpha = Math.min(1.0, particle.life / 1.5);
+
+            // Draw $ symbol if still alive
+            if (particle.life > 0) {
+                this.conversationGraphics.fillStyle(0x228B22, particle.alpha);  // Money green
+                this.conversationGraphics.lineStyle(2, 0x228B22, particle.alpha);
+
+                // Draw $ symbol using text (simple approach)
+                const fontSize = 24;
+                const tempText = this.add.text(particle.x, particle.y, '$', {
+                    fontSize: `${fontSize}px`,
+                    color: '#228B22',
+                    fontStyle: 'bold'
+                });
+                tempText.setAlpha(particle.alpha);
+                tempText.setOrigin(0.5, 0.5);
+                tempText.setDepth(1000);
+
+                // Schedule destruction for next frame
+                this.time.delayedCall(0, () => {
+                    tempText.destroy();
+                });
+
                 return true;
             }
             return false;
