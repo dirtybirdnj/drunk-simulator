@@ -111,6 +111,15 @@ export class GameScene extends Phaser.Scene {
         graphics.generateTexture('player-sprite', 24, 24);
         graphics.destroy();
 
+        // Create beer sprite texture (must be before playerBeerIcon)
+        const beerGraphics = this.add.graphics();
+        beerGraphics.fillStyle(0xFFD700, 1); // Gold
+        beerGraphics.fillRect(0, 2, 12, 10);
+        beerGraphics.fillStyle(0xFFFFFF, 0.8); // Foam
+        beerGraphics.fillRect(0, 0, 12, 3);
+        beerGraphics.generateTexture('beer-sprite', 12, 12);
+        beerGraphics.destroy();
+
         // Spawn player at position marked in map (type 8 = player start)
         const startX = (this as any).playerStartX || 512;
         const startY = (this as any).playerStartY || 1008;
@@ -127,7 +136,7 @@ export class GameScene extends Phaser.Scene {
         this.player.setData('socialTarget', null);
         this.player.setData('socialStartTime', 0);
 
-        // Player beer icon
+        // Player beer icon (texture created above)
         this.playerBeerIcon = this.add.sprite(this.player.x, this.player.y - 20, 'beer-sprite');
         this.playerBeerIcon.setDepth(101);
         this.playerBeerIcon.setVisible(false);
@@ -513,15 +522,6 @@ const map: number[][] = [
         staffGraphics.fillCircle(10, 10, 10);
         staffGraphics.generateTexture('staff-sprite', 20, 20);
         staffGraphics.destroy();
-
-        // Beer emoji 🍺
-        const beerGraphics = this.add.graphics();
-        beerGraphics.fillStyle(0xFFD700, 1); // Gold
-        beerGraphics.fillRect(0, 2, 12, 10);
-        beerGraphics.fillStyle(0xFFFFFF, 0.8); // Foam
-        beerGraphics.fillRect(0, 0, 12, 3);
-        beerGraphics.generateTexture('beer-sprite', 12, 12);
-        beerGraphics.destroy();
 
         // Patrons will now spawn dynamically via timer
 
@@ -1421,6 +1421,8 @@ const map: number[][] = [
                         this.player.y >= zone.y && this.player.y < zone.y + zone.height
                     );
 
+                    console.log(`🔍 Player waiting - inVisionCone: ${inVisionCone}, inServiceZone: ${inServiceZone}`);
+
                     if (inVisionCone && inServiceZone) {
                         const dx = this.player.x - bartender.x;
                         const dy = this.player.y - bartender.y;
@@ -1661,16 +1663,13 @@ const map: number[][] = [
                     }
                 });
 
-                // Find a tile adjacent to the register
-                const targetX = closestRegister.x;
-                const targetY = closestRegister.y + this.TILE_SIZE; // Stand below the register
-
-                const dx = targetX - bartender.x;
-                const dy = targetY - bartender.y;
+                // Check if bartender is adjacent to register (within 1.5 tiles)
+                const dx = closestRegister.x - bartender.x;
+                const dy = closestRegister.y - bartender.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
 
-                if (dist < 20) {
-                    // Reached register - create $ animation and return to idle
+                if (dist < this.TILE_SIZE * 1.5) {
+                    // Close enough to register - create $ animation and return to idle
                     bartender.setVelocity(0, 0);
 
                     // Create $ particle animation
@@ -1683,7 +1682,7 @@ const map: number[][] = [
                     });
 
                     bartender.setData('state', 'idle');
-                    console.log('💰 Ka-ching! Sale registered');
+                    console.log('💰 Ka-ching! Sale registered, back to idle');
                 } else {
                     // Move toward register
                     bartender.setVelocity(
