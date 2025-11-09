@@ -208,8 +208,8 @@ export class GameScene extends Phaser.Scene {
         this.cameras.main.setBounds(0, 0, this.MAP_COLS * this.TILE_SIZE, this.MAP_ROWS * this.TILE_SIZE);
 
         // Calculate zoom to fill viewport with smaller maps
-        // Reserve space for editor UI bar at bottom (100px)
-        const UI_BAR_HEIGHT = 100;
+        // Reserve space for editor UI bar at bottom (100px) - DISABLED FOR NOW
+        const UI_BAR_HEIGHT = 0; // Was 100, set to 0 while debugging
         const gameWidth = 1024;  // Canvas width from config
         const gameHeight = 1824 - UI_BAR_HEIGHT; // Canvas height minus UI bar
         const mapPixelWidth = this.MAP_COLS * this.TILE_SIZE;
@@ -247,9 +247,10 @@ export class GameScene extends Phaser.Scene {
         // Click/tap to move (disabled in EDIT mode)
         this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
             // Don't handle player movement in EDIT mode
-            if (this.editorUI && this.editorUI.getMode() === EditorMode.EDIT) {
-                return;
-            }
+            // TEMPORARILY DISABLED FOR DEBUGGING
+            // if (this.editorUI && this.editorUI.getMode() === EditorMode.EDIT) {
+            //     return;
+            // }
 
             // Convert screen coordinates to world coordinates
             const worldX = pointer.worldX;
@@ -368,13 +369,14 @@ export class GameScene extends Phaser.Scene {
 
         // Initialize in-game editor (free mobile version)
         // Start in EDIT mode - don't spawn NPCs or start simulation yet
-        this.editorUI = new EditorUI(this);
-        this.editorUI.create();
+        // TEMPORARILY DISABLED FOR DEBUGGING
+        // this.editorUI = new EditorUI(this);
+        // this.editorUI.create();
 
         // Pause physics initially - will unpause when player clicks START
-        this.physics.pause();
+        // this.physics.pause();
 
-        console.log('🛠️ In-game editor initialized in EDIT mode');
+        console.log('🛠️ In-game editor DISABLED for debugging');
     }
 
     update() {
@@ -387,10 +389,11 @@ export class GameScene extends Phaser.Scene {
         const socialTarget = this.player.getData('socialTarget');
 
         // Don't update player movement in EDIT mode
-        if (this.editorUI && this.editorUI.getMode() === EditorMode.EDIT) {
-            this.player.setVelocity(0);
-            return;
-        }
+        // TEMPORARILY DISABLED FOR DEBUGGING
+        // if (this.editorUI && this.editorUI.getMode() === EditorMode.EDIT) {
+        //     this.player.setVelocity(0);
+        //     return;
+        // }
 
         // Player movement
         const speed = 220;  // Increased from 160
