@@ -1453,6 +1453,7 @@ const map: number[][] = [
                 // Bartenders sweep their vision cone left/right to scan for customers
                 const scanDirection = bartender.getData('scanDirection') || 1;
                 const currentFacing = bartender.getData('facingAngle') || 0;
+                const sweepCount = bartender.getData('sweepCount') || 0;
 
                 // Get base direction toward service zones
                 const nearbyZones = this.barServiceZones.filter(zone => {
@@ -1483,8 +1484,10 @@ const map: number[][] = [
                 const angleDiff = newFacing - baseDirection;
                 if (angleDiff > sweepRange) {
                     bartender.setData('scanDirection', -1);
+                    bartender.setData('sweepCount', sweepCount + 1); // Count complete sweeps
                 } else if (angleDiff < -sweepRange) {
                     bartender.setData('scanDirection', 1);
+                    bartender.setData('sweepCount', sweepCount + 1); // Count complete sweeps
                 } else {
                     bartender.setData('facingAngle', newFacing);
                 }
@@ -1565,9 +1568,44 @@ const map: number[][] = [
                     bartender.setVelocity(0, 0);
                     bartender.setData('state', 'going_to_tap');
                     bartender.setData('target', closestCustomer);
+                    bartender.setData('sweepCount', 0); // Reset sweep count when customer found
                 } else {
-                    // No customers in vision cone - stand still and keep sweeping
-                    bartender.setVelocity(0, 0);
+                    // No customers in vision cone
+                    if (sweepCount >= 5) {
+                        // After 5 sweeps with no target, move to adjacent tile
+                        const moveTarget = bartender.getData('moveTarget');
+
+                        if (!moveTarget) {
+                            // Pick a random adjacent tile
+                            const offsetX = (Math.random() > 0.5 ? 1 : -1) * this.TILE_SIZE;
+                            const offsetY = (Math.random() > 0.5 ? 1 : -1) * this.TILE_SIZE;
+                            bartender.setData('moveTarget', {
+                                x: bartender.x + offsetX,
+                                y: bartender.y + offsetY
+                            });
+                            console.log(`🚶 Bartender moving to adjacent tile after ${sweepCount} sweeps`);
+                        } else {
+                            // Move toward target
+                            const dx = moveTarget.x - bartender.x;
+                            const dy = moveTarget.y - bartender.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+
+                            if (dist < 10) {
+                                // Reached target - stop and reset
+                                bartender.setVelocity(0, 0);
+                                bartender.setData('moveTarget', null);
+                                bartender.setData('sweepCount', 0);
+                                console.log(`📍 Bartender reached new position, resuming sweep`);
+                            } else {
+                                // Keep moving
+                                const speed = 60;
+                                bartender.setVelocity((dx / dist) * speed, (dy / dist) * speed);
+                            }
+                        }
+                    } else {
+                        // Continue sweeping
+                        bartender.setVelocity(0, 0);
+                    }
                 }
             } else if (bartenderState === 'going_to_tap') {
                 // Find closest available (unreserved) beer tap
