@@ -145,14 +145,14 @@ export class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.npcs, this.npcs);
         this.createNPCs();
 
-        // UI
-        const instructions = this.add.text(10, 10, 'ARROWS/CLICK: Move | SPACE: Order Beer | STAFF=Red | PATRONS=Orange', {
-            fontSize: '14px',
-            color: '#fff',
-            backgroundColor: '#000',
-            padding: { x: 8, y: 5 }
-        });
-        instructions.setScrollFactor(0);
+        // UI - Instructions removed for cleaner interface
+        // const instructions = this.add.text(10, 10, 'ARROWS/CLICK: Move | SPACE: Order Beer | STAFF=Red | PATRONS=Orange', {
+        //     fontSize: '14px',
+        //     color: '#fff',
+        //     backgroundColor: '#000',
+        //     padding: { x: 8, y: 5 }
+        // });
+        // instructions.setScrollFactor(0);
 
         // Debug text - disabled for production
         // this.debugText = this.add.text(10, 50, '', {
