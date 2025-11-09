@@ -60,6 +60,16 @@ export class TitleScene extends Phaser.Scene {
         });
         description.setOrigin(0.5);
 
+        // Credit text at bottom
+        const credits = this.add.text(width / 2, height - 30, 'A game by Mat Gilbert / mat@vtapi.co', {
+            fontSize: '18px',
+            color: '#FFD700',
+            fontFamily: 'Arial, sans-serif',
+            fontStyle: 'italic',
+            align: 'center'
+        });
+        credits.setOrigin(0.5);
+
         // Wobble animation for first DRUNK text
         this.tweens.add({
             targets: drunk1,
