@@ -801,10 +801,11 @@ const map: number[][] = [
                             let dy = zoneCenterY - npc.y;
                             const dist = Math.sqrt(dx * dx + dy * dy);
 
-                            // Apply separation force
+                            // Reduce separation force significantly when heading to bar
+                            // This prevents jiggling when approaching service zones
                             const separation = this.getSeparationForce(npc, drunkLevel);
-                            dx += separation.x;
-                            dy += separation.y;
+                            dx += separation.x * 0.2;  // Only 20% of separation force
+                            dy += separation.y * 0.2;
 
                             // Normalize and apply speed
                             const newDist = Math.sqrt(dx * dx + dy * dy);
@@ -1045,26 +1046,28 @@ const map: number[][] = [
             const bartenderState = bartender.getData('state');
 
             if (bartenderState === 'idle') {
-                // Idle bartenders slowly scan the bar area by rotating their vision cone
-                const scanTimer = bartender.getData('scanTimer') || 0;
+                // Idle bartenders scan by rotating until they hit a wall, then reverse
                 const scanDirection = bartender.getData('scanDirection') || 1;
                 const currentFacing = bartender.getData('facingAngle');
 
-                // Scan 90 degrees (PI/2) over 3 seconds, then reverse
-                const scanSpeed = (Math.PI / 2) / (3 * 60);  // 90 degrees over 3 seconds at 60fps
+                // Scan speed: rotate ~60 degrees per second at 60fps
+                const scanSpeed = Math.PI / 3 / 60;  // 60 degrees/sec
                 const newFacing = currentFacing + (scanSpeed * scanDirection);
 
-                // Update facing angle
-                bartender.setData('facingAngle', newFacing);
+                // Check if vision cone edge is hitting a wall
+                const coneHalfAngle = Math.PI / 2.5 / 2;  // Half of cone width
+                const leftEdge = newFacing - coneHalfAngle;
+                const rightEdge = newFacing + coneHalfAngle;
 
-                // Update scan timer
-                const newScanTimer = scanTimer + (1/60);  // Increment by 1 frame
-                bartender.setData('scanTimer', newScanTimer);
+                const hitWallLeft = this.isWallInDirection(bartender.x, bartender.y, leftEdge, 160);
+                const hitWallRight = this.isWallInDirection(bartender.x, bartender.y, rightEdge, 160);
 
-                // Reverse direction every 3 seconds
-                if (newScanTimer >= 3) {
+                // Reverse direction if either edge hits a wall
+                if ((scanDirection > 0 && hitWallRight) || (scanDirection < 0 && hitWallLeft)) {
                     bartender.setData('scanDirection', -scanDirection);
-                    bartender.setData('scanTimer', 0);
+                } else {
+                    // Update facing angle
+                    bartender.setData('facingAngle', newFacing);
                 }
 
                 // Find closest waiting customer in bartender's vision cone
@@ -1240,8 +1243,8 @@ const map: number[][] = [
             const facingAngle = bartender.getData('facingAngle');
 
             // Draw vision cone for bartenders
-            const coneRange = 64;  // 2 tiles (bar counter + floor tile)
-            const coneAngle = Math.PI / 3;  // 60 degrees
+            const coneRange = 160;  // 5 tiles - larger scanning range
+            const coneAngle = Math.PI / 2.5;  // ~72 degrees - wider cone
 
             this.visionConeGraphics.fillStyle(0xFFFF00, 0.15);  // Yellow, 15% opacity
             this.visionConeGraphics.beginPath();
@@ -1456,6 +1459,39 @@ const map: number[][] = [
         });
     }
 
+    private isWallInDirection(bartenderX: number, bartenderY: number, angle: number, range: number): boolean {
+        // Cast a ray in the given direction to check for walls
+        const steps = 10;
+        const stepSize = range / steps;
+
+        for (let i = 1; i <= steps; i++) {
+            const checkX = bartenderX + Math.cos(angle) * (stepSize * i);
+            const checkY = bartenderY + Math.sin(angle) * (stepSize * i);
+
+            // Convert to grid coordinates
+            const gridX = Math.floor(checkX / this.TILE_SIZE);
+            const gridY = Math.floor(checkY / this.TILE_SIZE);
+
+            // Check if this tile is a wall (out of bounds or wall tile)
+            if (gridX < 0 || gridX >= this.MAP_COLS || gridY < 0 || gridY >= this.MAP_ROWS) {
+                return true;
+            }
+
+            // Check collision with walls via physics
+            const tilesAtPosition = this.walls.children.entries.filter((wall: any) => {
+                const dx = Math.abs(wall.x - checkX);
+                const dy = Math.abs(wall.y - checkY);
+                return dx < 16 && dy < 16;  // Within half a tile
+            });
+
+            if (tilesAtPosition.length > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private isPointInVisionCone(
         pointX: number,
         pointY: number,
@@ -1465,9 +1501,9 @@ const map: number[][] = [
         const bartenderX = bartender.x;
         const bartenderY = bartender.y;
 
-        // Vision cone parameters - bartender can only see 2 tiles away (bar counter + floor)
-        const coneRange = 64;  // 2 tiles = 64 pixels
-        const coneAngle = Math.PI / 3;  // 60 degrees cone width
+        // Vision cone parameters - larger scanning range
+        const coneRange = 160;  // 5 tiles = 160 pixels
+        const coneAngle = Math.PI / 2.5;  // ~72 degrees cone width
 
         // Vector from bartender to point
         const dx = pointX - bartenderX;
