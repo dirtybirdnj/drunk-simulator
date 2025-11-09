@@ -282,7 +282,7 @@
                 <button id="fill-btn" onclick="startFillMode()" style="width: 100%; padding: 6px; margin-bottom: 3px; background: #444; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">
                     Fill Rectangle
                 </button>
-                <button onclick="clearGrid()" style="width: 100%; padding: 6px; background: #444; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">
+                <button id="clear-btn" onclick="clearGrid()" style="width: 100%; padding: 6px; background: #444; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">
                     Clear All
                 </button>
             </div>
@@ -521,14 +521,41 @@
             });
         }
 
+        let clearButtonArmed = false;
+
         function clearGrid() {
-            if (confirm('Clear the entire grid?')) {
+            const btn = document.getElementById('clear-btn');
+
+            if (!clearButtonArmed) {
+                // First click - arm the button
+                clearButtonArmed = true;
+                btn.style.background = '#ff0000';
+                btn.textContent = 'ABOUT TO CLEAR MAP. CLICK CLEAR ALL TO START OVER';
+                document.getElementById('status').textContent = '⚠️ Click Clear All again to confirm';
+            } else {
+                // Second click - execute clear
                 saveHistory();
                 grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(0)); // Fill with street tiles
                 renderGrid();
                 document.getElementById('status').textContent = '✅ Grid cleared';
+
+                // Disarm button
+                clearButtonArmed = false;
+                btn.style.background = '#444';
+                btn.textContent = 'Clear All';
             }
         }
+
+        // Global click listener to disarm button if user clicks elsewhere
+        document.addEventListener('click', function(event) {
+            if (clearButtonArmed && event.target.id !== 'clear-btn') {
+                const btn = document.getElementById('clear-btn');
+                clearButtonArmed = false;
+                btn.style.background = '#444';
+                btn.textContent = 'Clear All';
+                document.getElementById('status').textContent = '✅ Clear cancelled';
+            }
+        });
 
         function startFillMode() {
             // Prevent camera start tile from being used in fill mode
