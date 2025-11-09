@@ -5,6 +5,7 @@ import { MapBuilder } from '../systems/MapBuilder';
 import { NPCSpawner } from '../systems/NPCSpawner';
 import { NPCAIController } from '../systems/NPCAIController';
 import { VisualizationHelpers } from '../systems/VisualizationHelpers';
+import { LevelSize, LEVEL_CONFIGS, GameState } from '../types/GameState';
 
 export class GameScene extends Phaser.Scene {
     private player!: Phaser.Physics.Arcade.Sprite;
@@ -32,6 +33,11 @@ export class GameScene extends Phaser.Scene {
     private visionConeGraphics!: Phaser.GameObjects.Graphics;
     private smokeParticles: Array<{x: number, y: number, alpha: number, vx: number, vy: number, life: number}> = [];
 
+    // Game state for level system
+    private gameState!: GameState;
+    private cashText!: Phaser.GameObjects.Text;
+    private levelText!: Phaser.GameObjects.Text;
+
     // Map dimensions (40×70 = 2,800 tiles - optimized for QR code compression)
     private MAP_COLS = 40;
     private MAP_ROWS = 70;
@@ -53,7 +59,7 @@ export class GameScene extends Phaser.Scene {
         super({ key: 'GameScene' });
     }
 
-    init(data: { selectedMap?: string | null; scannedMapData?: string }) {
+    init(data: { selectedMap?: string | null; scannedMapData?: string; level?: LevelSize }) {
         // Priority 1: Check for scannedMapData (from QR code or editor)
         if (data.scannedMapData) {
             try {
@@ -83,6 +89,15 @@ export class GameScene extends Phaser.Scene {
             console.log('📍 Using default map');
             this.selectedMapData = null;
         }
+
+        // Initialize game state for level system
+        const selectedLevel = data.level || LevelSize.MINI;
+        this.gameState = {
+            currentLevel: selectedLevel,
+            cashEarned: 0,
+            levelComplete: false
+        };
+        console.log(`🎮 Starting ${LEVEL_CONFIGS[selectedLevel].name} - Goal: $${LEVEL_CONFIGS[selectedLevel].cashThreshold}`);
     }
 
     preload() {
@@ -212,6 +227,26 @@ export class GameScene extends Phaser.Scene {
         this.npcs = this.physics.add.group();
         this.physics.add.collider(this.npcs, this.walls);
         this.physics.add.collider(this.npcs, this.npcs);
+
+        // Level and Cash UI
+        const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];
+        this.levelText = this.add.text(10, 10, levelConfig.name, {
+            fontSize: '24px',
+            color: '#fff',
+            backgroundColor: '#000',
+            padding: { x: 10, y: 6 }
+        });
+        this.levelText.setScrollFactor(0);
+        this.levelText.setDepth(1000);
+
+        this.cashText = this.add.text(10, 45, `$${this.gameState.cashEarned} / $${levelConfig.cashThreshold}`, {
+            fontSize: '20px',
+            color: '#00ff00',
+            backgroundColor: '#000',
+            padding: { x: 10, y: 6 }
+        });
+        this.cashText.setScrollFactor(0);
+        this.cashText.setDepth(1000);
 
         // Initialize NPC spawner
         this.npcSpawner = new NPCSpawner(this, this.npcs, this.walls, this.TILE_SIZE, this.barServiceZones);
@@ -428,5 +463,86 @@ export class GameScene extends Phaser.Scene {
 
         // NPC AI
         this.npcAIController.updateNPCAI();
+
+        // Check for level completion
+        if (!this.gameState.levelComplete) {
+            const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];
+            if (this.gameState.cashEarned >= levelConfig.cashThreshold) {
+                this.gameState.levelComplete = true;
+                this.showLevelComplete();
+            }
+        }
+    }
+
+    // Public method for NPCAIController to add cash
+    public addCash(amount: number): void {
+        this.gameState.cashEarned += amount;
+        const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];
+        this.cashText.setText(`$${this.gameState.cashEarned} / $${levelConfig.cashThreshold}`);
+    }
+
+    private showLevelComplete(): void {
+        console.log('🎉 Level Complete!');
+
+        // Show victory message
+        const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];
+        const victoryText = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY - 100,
+            `${levelConfig.name} Complete!`,
+            {
+                fontSize: '48px',
+                color: '#FFD700',
+                backgroundColor: '#000',
+                padding: { x: 20, y: 10 }
+            }
+        );
+        victoryText.setOrigin(0.5);
+        victoryText.setScrollFactor(0);
+        victoryText.setDepth(2000);
+
+        const goalText = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            `Goal Reached: $${this.gameState.cashEarned}`,
+            {
+                fontSize: '32px',
+                color: '#00ff00',
+                backgroundColor: '#000',
+                padding: { x: 15, y: 8 }
+            }
+        );
+        goalText.setOrigin(0.5);
+        goalText.setScrollFactor(0);
+        goalText.setDepth(2000);
+
+        const continueText = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY + 80,
+            'Press SPACE to continue playing',
+            {
+                fontSize: '24px',
+                color: '#fff',
+                backgroundColor: '#000',
+                padding: { x: 12, y: 6 }
+            }
+        );
+        continueText.setOrigin(0.5);
+        continueText.setScrollFactor(0);
+        continueText.setDepth(2000);
+
+        // Flash the text
+        this.tweens.add({
+            targets: [victoryText, goalText, continueText],
+            alpha: 0.3,
+            duration: 500,
+            yoyo: true,
+            repeat: -1
+        });
+
+        // Stop spawning new patrons
+        if (this.patronSpawnTimer) {
+            this.patronSpawnTimer.remove();
+        }
     }
 }
