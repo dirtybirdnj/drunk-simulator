@@ -152,7 +152,7 @@ export class TitleScene extends Phaser.Scene {
 
         // Description text (moved down 3 inches = 288px total)
         const description = this.add.text(width / 2, 876, 'A simulation game to experiment\nwith crowd dynamics by making a bar', {
-            fontSize: '28px',
+            fontSize: '36px',
             color: '#FFD700',
             fontFamily: 'Pixelify Sans, sans-serif',
             fontStyle: 'italic',
