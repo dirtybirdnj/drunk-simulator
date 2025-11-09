@@ -172,18 +172,13 @@ export class GameScene extends Phaser.Scene {
         const zoomX = gameWidth / mapPixelWidth;
         const zoomY = gameHeight / mapPixelHeight;
 
-        // Use the smaller zoom to ensure entire map fits, but scale up small maps
+        // Use the smaller zoom to ensure entire map fits
+        // Small maps (zoom > 1): tiles appear BIGGER
+        // Large maps (zoom < 1): tiles appear SMALLER
         const zoom = Math.min(zoomX, zoomY);
 
-        if (zoom > 1) {
-            // Map is smaller than viewport, zoom in to fill space
-            this.cameras.main.setZoom(zoom);
-            console.log(`📷 Zooming camera to ${zoom.toFixed(2)}x to fill viewport (map: ${this.MAP_COLS}×${this.MAP_ROWS})`);
-        } else {
-            // Map is larger than viewport, use default zoom
-            this.cameras.main.setZoom(1);
-            console.log(`📷 Using default zoom for large map (${this.MAP_COLS}×${this.MAP_ROWS})`);
-        }
+        this.cameras.main.setZoom(zoom);
+        console.log(`📷 Camera zoom set to ${zoom.toFixed(2)}x (map: ${this.MAP_COLS}×${this.MAP_ROWS}, pixels: ${mapPixelWidth}×${mapPixelHeight})`);
 
         this.cameras.main.startFollow(this.player, false, 0.08, 0.08);
 
