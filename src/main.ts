@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
-import { TitleScene } from './scenes/TitleScene';
+import { BootMenuScene } from './scenes/BootMenuScene';
+import { BootAnimationScene } from './scenes/BootAnimationScene';
+import { MenuButtonsScene } from './scenes/MenuButtonsScene';
 import { GameScene } from './scenes/GameScene';
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -19,7 +21,7 @@ const config: Phaser.Types.Core.GameConfig = {
             debug: false // Turn off collision box visualization
         }
     },
-    scene: [TitleScene, GameScene]
+    scene: [BootMenuScene, BootAnimationScene, MenuButtonsScene, GameScene]
 };
 
 const game = new Phaser.Game(config);
