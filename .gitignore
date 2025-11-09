@@ -10,3 +10,6 @@ release/
 ios/
 android/
 .capacitor/
+
+# itch.io builds
+drunk-simulator-html5.zip

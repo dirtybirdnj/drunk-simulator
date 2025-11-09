@@ -10,5 +10,9 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets'
+  },
+  define: {
+    // Disable editor for itch.io builds, enable for dev/electron
+    'window.DISABLE_EDITOR': process.env.DISABLE_EDITOR === 'true'
   }
 });

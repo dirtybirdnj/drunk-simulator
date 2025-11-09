@@ -89,7 +89,8 @@ export class MenuButtonsScene extends Phaser.Scene {
 
         // Editor button (desktop only) - positioned below SCAN button
         const isDesktop = window.innerWidth >= 1024;
-        if (isDesktop) {
+        const editorEnabled = !(window as any).DISABLE_EDITOR;
+        if (isDesktop && editorEnabled) {
             const editorY = scanY + buttonSpacing;
             const editorBg = this.add.rectangle(width / 2, editorY, 900, 140, 0x667eea);
             editorBg.setStrokeStyle(6, 0xFFFFFF);

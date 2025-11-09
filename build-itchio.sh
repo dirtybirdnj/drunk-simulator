@@ -1,21 +1,20 @@
 #!/bin/bash
 
-# Build Drunk Simulator for itch.io
+# Build Drunk Simulator for itch.io (without map editor)
 
 echo "🎮 Building Drunk Simulator for itch.io..."
 echo ""
 
-# Build web version
-echo "📦 Building web version..."
-npm run build
+# Build web version with editor disabled
+echo "📦 Building web version (editor disabled)..."
+DISABLE_EDITOR=true npm run build
 if [ $? -ne 0 ]; then
     echo "❌ Build failed!"
     exit 1
 fi
 
-# Copy map editor
-echo "📝 Copying map editor..."
-cp map-editor.html dist/
+# DO NOT copy map editor for itch.io builds
+echo "⚠️  Map editor excluded from itch.io build"
 
 # Create ZIP
 echo "🗜️  Creating ZIP file..."
