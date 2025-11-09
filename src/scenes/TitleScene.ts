@@ -17,15 +17,81 @@ export class TitleScene extends Phaser.Scene {
         // Background color (dark)
         this.cameras.main.setBackgroundColor('#1a1a1a');
 
-        // Title text
-        const title = this.add.text(width / 2, 150, 'DRUNK SIMULATOR', {
+        // First "DRUNK" text - wobbles and fades
+        const drunk1 = this.add.text(width / 2, 180, 'DRUNK', {
+            fontSize: '128px',
+            color: '#FFD700',
+            fontFamily: 'Arial, sans-serif',
+            fontStyle: 'bold',
+            align: 'center'
+        });
+        drunk1.setOrigin(0.5);
+        drunk1.setAlpha(0.8);
+
+        // Second "DRUNK" text - offset animation, different rate
+        const drunk2 = this.add.text(width / 2, 180, 'DRUNK', {
+            fontSize: '128px',
+            color: '#FFD700',
+            fontFamily: 'Arial, sans-serif',
+            fontStyle: 'bold',
+            align: 'center'
+        });
+        drunk2.setOrigin(0.5);
+        drunk2.setAlpha(0.6);
+
+        // "SIMULATOR" text - static below
+        const simulator = this.add.text(width / 2, 280, 'SIMULATOR', {
             fontSize: '64px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
             fontStyle: 'bold',
             align: 'center'
         });
-        title.setOrigin(0.5);
+        simulator.setOrigin(0.5);
+
+        // Wobble animation for first DRUNK text
+        this.tweens.add({
+            targets: drunk1,
+            angle: { from: -3, to: 3 },
+            x: { from: width / 2 - 5, to: width / 2 + 5 },
+            duration: 2000,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        // Fade in/out for first DRUNK text
+        this.tweens.add({
+            targets: drunk1,
+            alpha: { from: 0.6, to: 1.0 },
+            duration: 1500,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        // Wobble animation for second DRUNK text - different rate, delayed start
+        this.time.delayedCall(700, () => {
+            this.tweens.add({
+                targets: drunk2,
+                angle: { from: -4, to: 4 },
+                x: { from: width / 2 - 7, to: width / 2 + 7 },
+                duration: 2700, // Different duration for desync
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
+
+            // Fade in/out for second DRUNK text - different rate
+            this.tweens.add({
+                targets: drunk2,
+                alpha: { from: 0.4, to: 0.9 },
+                duration: 2100, // Different duration for desync
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
+        });
 
         // Start button (always visible) - centered vertically
         const startY = height / 2;
