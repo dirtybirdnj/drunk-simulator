@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import confetti from 'canvas-confetti';
 
 export class TitleScene extends Phaser.Scene {
     private selectedMap: string | null = null;
@@ -295,7 +296,18 @@ export class TitleScene extends Phaser.Scene {
         });
         startBg.on('pointerdown', () => {
             console.log(`🎮 Starting game with map: ${this.selectedMap || 'Default'}`);
-            this.scene.start('GameScene', { selectedMap: this.selectedMap });
+
+            // Trigger confetti celebration!
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+
+            // Start game scene after a brief delay for confetti effect
+            this.time.delayedCall(500, () => {
+                this.scene.start('GameScene', { selectedMap: this.selectedMap });
+            });
         });
     }
 
