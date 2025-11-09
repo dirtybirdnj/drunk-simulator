@@ -1,96 +1,39 @@
-# 🍺 Drunk Simulator
+# Drunk Simulator
 
-A top-down bar simulation game where you create chaos, build custom maps, and share them with friends.
+A top-down bar simulation game built with Phaser 3 and TypeScript. Create custom bar layouts, simulate crowd dynamics, and share your creations with friends via QR codes.
 
-**Available on:**
-- [itch.io](https://itch.io) - Play instantly in your browser
-- **Right here** - Full developer access (you found the secret tier!)
+## Features
 
----
+- **Physics-based simulation** - Realistic drunk movement with damping and drag
+- **Custom map editor** - Design your own bar layouts with a visual editor
+- **QR code sharing** - Export and share maps with friends
+- **Multi-platform** - Web, Desktop (Electron), and Mobile (iOS/Android via Capacitor)
+- **Built with modern web tech** - TypeScript, Phaser 3, Vite
 
-## 🎮 Three Ways to Play
-
-### 1. itch.io Base ($2.99)
-- Play the game
-- Scan QR codes to load custom maps
-- Pure gaming experience
-
-### 2. itch.io Premium ($7.99)
-- Everything in Base
-- **Map Editor** - Create custom bar layouts
-- **QR Code Sharing** - Export and share your creations
-- Save up to 10 custom maps
-
-### 3. GitHub Developer (FREE)
-- **Everything unlocked**
-- Full source code access
-- Modify the game however you want
-- Learn real web development skills
-- NO LIMITATIONS
-
-**You're in tier 3.** Welcome to the developer path. 🎓
-
----
-
-## 🚀 Quick Start (The Real Game Begins)
-
-If you can run these commands, you unlock EVERYTHING:
+## Quick Start
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/drunk-simulator.git
+git clone https://github.com/dirtybirdnj/drunk-simulator.git
 cd drunk-simulator
 
 # Install dependencies
 npm install
 
-# Run the game locally
+# Run development server
 npm run dev
 ```
 
-The game opens at `http://localhost:3000`
+The game will open in your browser at `http://localhost:3000`
 
-**Congratulations!** You just:
-- Used the terminal
-- Installed a Node.js project
-- Ran a development server
-- Unlocked unlimited access
+## Controls
 
----
+- **Arrow Keys** - Move player
+- **START** - Play the default map
+- **SCAN** - Scan QR codes to load custom maps
+- **EDITOR** - Open map editor (desktop only)
 
-## 🧠 What You'll Learn
-
-By running this game from source, you're learning:
-
-### Terminal Skills
-- `git clone` - How to download code repositories
-- `npm install` - Package management
-- `npm run dev` - Running development servers
-- Basic command-line navigation
-
-### Web Development
-- **TypeScript** - Modern JavaScript with types
-- **Phaser 3** - Professional game engine
-- **Vite** - Lightning-fast build tool
-- **HTML5 Canvas** - Graphics rendering
-
-### Game Development
-- Scene management (Title, Game, Editor)
-- Sprite physics and collision
-- Map editing and persistence
-- QR code generation and scanning
-
-### Software Engineering
-- Project structure and organization
-- Build systems and deployment
-- Version control with git
-- Multi-platform deployment (Web, Electron, Mobile)
-
-**This is the real unlock.** Skills, not features.
-
----
-
-## 📂 Project Structure
+## Project Structure
 
 ```
 drunk-simulator/
@@ -107,68 +50,26 @@ drunk-simulator/
 │       └── qrcode.ts        # QR code generation
 ├── map-editor.html          # Visual map editor
 ├── index.html               # Game HTML
-├── vite.config.ts           # Build configuration
-├── build-itchio.sh          # itch.io base build
-└── build-itchio-premium.sh  # itch.io premium build
+└── vite.config.ts           # Build configuration
 ```
 
----
+## Development
 
-## 🎨 How to Modify the Game
-
-### Change the Map
-
-Edit the default map in `src/main.ts`:
-
-```typescript
-const ROWS = 64;
-const COLS = 32;
-
-// Modify the default grid
-function getDefaultGrid(): number[][] {
-    // Your custom map here
-}
-```
-
-### Add New Tile Types
-
-Add to the legend in `map-editor.html` and update rendering in `GameScene.ts`.
-
-### Change Game Physics
-
-Edit `src/scenes/GameScene.ts`:
-
-```typescript
-// Player speed
-this.physics.world.gravity.y = 0;
-player.setMaxVelocity(200, 200);
-
-// Drunk effect
-player.setDamping(true);
-player.setDrag(0.7);
-```
-
-### Create Custom Behaviors
-
-Add NPC behaviors, bar interactions, or scoring systems in `GameScene.ts`.
-
----
-
-## 🔧 Available Build Commands
+### Available Commands
 
 ```bash
 # Development
-npm run dev              # Run dev server
+npm run dev              # Run dev server with hot reload
 
 # Production Builds
 npm run build            # Standard web build
 
 # itch.io Builds
-./build-itchio.sh        # Base version (no editor)
+./build-itchio.sh        # Base version (play only)
 ./build-itchio-premium.sh # Premium (with editor)
 
 # Electron Desktop
-npm run electron:dev     # Run desktop app
+npm run electron:dev     # Run desktop app in development mode
 
 # Mobile (Capacitor)
 npm run cap:init         # Initialize Capacitor
@@ -176,56 +77,119 @@ npm run cap:add:ios      # Add iOS platform
 npm run cap:add:android  # Add Android platform
 ```
 
----
+### Tech Stack
 
-## 🎯 The Philosophy
+- **Phaser 3.70** - Game engine with Arcade Physics
+- **TypeScript** - Type-safe JavaScript
+- **Vite** - Fast build tool and dev server
+- **Electron** - Desktop app packaging
+- **Capacitor** - Mobile app packaging
 
-This project uses a **three-tier learning funnel**:
+## How to Modify
 
-**Tier 1: Players** pay $2.99 to play instantly
-- No friction, just fun
-- Support the game's development
+### Change the Default Map
 
-**Tier 2: Creators** pay $7.99 for map editor
-- Unlock creative tools
-- Share creations with community
+Edit `src/main.ts`:
 
-**Tier 3: Developers** learn for free
-- Full source code access
-- Unlimited modifications
-- Real programming skills
+```typescript
+const ROWS = 64;
+const COLS = 32;
 
-**The catch?** To unlock Tier 3, you have to learn:
-- How to use the terminal
-- What `git`, `npm`, and `node` are
-- How to read documentation
-- How to debug errors
+function getDefaultGrid(): number[][] {
+    // Modify default bar layout here
+}
+```
 
-**That's the real game.** We're teaching you to code by making you want to unlock features badly enough to learn.
+### Add New Tile Types
 
-Welcome to the developer tier. You earned it. 🎓
+1. Add tile to legend in `map-editor.html`
+2. Update rendering in `src/scenes/GameScene.ts`
 
----
+### Customize Physics
 
-## 🐛 Troubleshooting
+Edit `src/scenes/GameScene.ts`:
+
+```typescript
+// Player movement
+player.setMaxVelocity(200, 200);
+
+// Drunk effect (damping)
+player.setDamping(true);
+player.setDrag(0.7);
+```
+
+## Building for Distribution
+
+### Web (itch.io)
+
+Two versions are available:
+
+**Base Version** ($5) - Play only:
+```bash
+./build-itchio.sh
+# Creates drunk-simulator-html5.zip
+```
+
+**Premium Version** ($15) - Includes map editor:
+```bash
+./build-itchio-premium.sh
+# Creates drunk-simulator-premium-html5.zip
+```
+
+### Desktop (Electron)
+
+```bash
+ELECTRON=true npm run build
+# Package with electron-builder
+```
+
+### Mobile (iOS/Android)
+
+```bash
+npm run cap:init
+npm run cap:add:ios
+npm run cap:add:android
+# Build with Xcode/Android Studio
+```
+
+## Map Editor
+
+The map editor allows you to:
+- Design custom bar layouts
+- Add walls, floors, patios, and furniture
+- Test maps instantly
+- Export as QR codes for sharing
+- Save up to 10 maps locally
+
+Open the editor from the main menu (desktop only) or run `map-editor.html` directly.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit pull requests.
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b my-feature`
+3. Make your changes
+4. Commit: `git commit -m "Add my feature"`
+5. Push: `git push origin my-feature`
+6. Open a Pull Request
+
+## Troubleshooting
 
 ### "command not found: npm"
 
-You need Node.js installed:
-- Download from [nodejs.org](https://nodejs.org)
-- Install version 18 or higher
-- Restart your terminal
+Install Node.js from [nodejs.org](https://nodejs.org) (version 18 or higher)
 
 ### "command not found: git"
 
-You need Git installed:
-- Mac: `xcode-select --install`
-- Windows: Download from [git-scm.com](https://git-scm.com)
-- Linux: `sudo apt install git`
+Install Git:
+- **Mac**: `xcode-select --install`
+- **Windows**: Download from [git-scm.com](https://git-scm.com)
+- **Linux**: `sudo apt install git`
 
 ### "Cannot find module"
 
-Dependencies not installed:
+Delete and reinstall dependencies:
 ```bash
 rm -rf node_modules
 npm install
@@ -236,57 +200,25 @@ npm install
 Change the port in `vite.config.ts`:
 ```typescript
 server: {
-    port: 3001,  // Use different port
+    port: 3001,
     open: true
 }
 ```
 
----
+## License
 
-## 🤝 Contributing
+MIT License - see [LICENSE](LICENSE) file for details.
 
-Found a bug? Want to add features?
+If you build upon this project, please provide attribution to the original author.
 
-1. Fork the repo
-2. Create a branch: `git checkout -b my-feature`
-3. Make changes and commit: `git commit -m "Add feature"`
-4. Push: `git push origin my-feature`
-5. Open a Pull Request
+## Links
 
----
+- **Play on itch.io**: [Coming soon]
+- **Report bugs**: [GitHub Issues](https://github.com/dirtybirdnj/drunk-simulator/issues)
+- **Source code**: [GitHub](https://github.com/dirtybirdnj/drunk-simulator)
 
-## 📜 License
+## Credits
 
-This project is open source. Learn from it, modify it, break it, fix it.
+Created by Mat Gilbert
 
-The code is free. The skills you gain are priceless.
-
----
-
-## 🎓 What's Next?
-
-Now that you've unlocked the developer tier:
-
-1. **Modify the game** - Change colors, physics, behaviors
-2. **Create new features** - Add scoring, multiplayer, new mechanics
-3. **Learn the stack** - Dive into TypeScript, Phaser, Vite
-4. **Build your own game** - Use this as a template
-5. **Share your knowledge** - Help others unlock this tier
-
-**You just learned to code by wanting to play a game.**
-
-That was the whole point. 🎮→🎓
-
----
-
-## 📞 Support
-
-- **Issues**: Found a bug? [Open an issue](https://github.com/YOUR_USERNAME/drunk-simulator/issues)
-- **Questions**: Learning something new? Ask in discussions
-- **itch.io**: Want the easy version? [Buy it here](https://itch.io)
-
----
-
-**Remember:** The players who paid on itch.io are supporting this free education. They're subsidizing your learning path. Consider buying the itch.io version too to support continued development.
-
-BEEP BOOP! 🤖
+Built with Phaser 3, TypeScript, and Vite.

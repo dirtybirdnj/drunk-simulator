@@ -1,15 +1,11 @@
 # itch.io Two-Tier Pricing Strategy
 
-## The Trap (I mean... Strategy) 😈
+## Pricing Strategy
 
-You have **two paid versions** on itch.io that funnel curious players toward your GitHub repo where they can "unlock" everything by learning to code.
+You have **two paid versions** on itch.io:
 
-**Three-tier system:**
-1. **itch.io Base** - $2.99 - Play only, scan QR codes
-2. **itch.io Premium** - $7.99 - Includes map editor
-3. **GitHub Developers** - FREE (but requires learning) - Full access + modify game
-
-Players who get curious enough to Google "drunk simulator unlock editor" will find your GitHub repo and have to learn git, npm, and terminal commands to run it. **That's the real game.** 🎓
+1. **itch.io Base** - $5.00 - Play only, scan QR codes
+2. **itch.io Premium** - $15.00 - Includes map editor
 
 ---
 
@@ -34,7 +30,7 @@ You have **two versions** of Drunk Simulator ready for itch.io:
 - ❌ No map editor
 - ❌ Can't create own maps
 
-**Recommended pricing:** $2.99 - $4.99
+**Recommended pricing:** $5.00
 
 **Player experience:**
 "I want to play the game and try maps my friends made"
@@ -57,7 +53,7 @@ You have **two versions** of Drunk Simulator ready for itch.io:
 - ✅ **Save Maps** - Store up to 10 custom maps
 - ✅ **LOAD MAP** - Test your creations instantly
 
-**Recommended pricing:** $2.99 - $4.99
+**Recommended pricing:** $15.00
 
 **Player experience:**
 "I want to create crazy bar layouts and share them with friends"
@@ -119,25 +115,13 @@ You have **two versions** of Drunk Simulator ready for itch.io:
 
 ## Price Recommendations
 
-**Conservative:**
-- Base: $1.99
-- Premium: $4.99
+**Recommended Pricing:**
+- Base: $5.00
+- Premium: $15.00
 
-**Moderate (Recommended):**
-- Base: $2.99
-- Premium: $7.99
-
-**Aggressive:**
-- Base: $4.99
-- Premium: $9.99
-
-**Secret Fourth Tier:**
-- GitHub: FREE (but must learn git, npm, terminal)
-- This is the real "premium" - knowledge
-
-**Name Your Own Price:**
-- Minimum: $0.00 (base) / $1.99 (premium)
-- Suggested: $0.99 (base) / $2.99 (premium)
+**Name Your Own Price (Alternative):**
+- Minimum: $5.00 (base) / $15.00 (premium)
+- Suggested: $5.00 (base) / $15.00 (premium)
 
 ---
 
