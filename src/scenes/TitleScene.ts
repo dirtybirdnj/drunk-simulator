@@ -163,7 +163,7 @@ export class TitleScene extends Phaser.Scene {
 
         // Credit text at bottom
         const credits = this.add.text(width / 2, height - 30, 'A game by Mat Gilbert / mat@vtapi.co', {
-            fontSize: '18px',
+            fontSize: '28px',
             color: '#FFD700',
             fontFamily: 'Pixelify Sans, sans-serif',
             fontStyle: 'italic',
