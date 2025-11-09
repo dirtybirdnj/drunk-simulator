@@ -126,8 +126,8 @@ export class TitleScene extends Phaser.Scene {
         // Add bokeh effect to drunk4
         const drunk4Bokeh = drunk4.postFX.addBokeh(0);
 
-        // "SIMULATOR" text - static below (moved down 3 inches = 288px)
-        const simulator = this.add.text(width / 2, 728, 'SIMULATOR', {
+        // "SIMULATOR" text - static below (moved down 2.5 inches = 240px)
+        const simulator = this.add.text(width / 2, 680, 'SIMULATOR', {
             fontSize: '64px',
             color: '#FFD700',
             fontFamily: 'Pixelify Sans, sans-serif',
