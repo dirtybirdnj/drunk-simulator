@@ -542,8 +542,29 @@ export class GameScene extends Phaser.Scene {
         this.statsText.setText(`⏱️ ${timeStr} | 💰 $${this.gameState.cashEarned} | 🍺 ${this.beersPoured} | 👥 ${patronCount} | 👔 ${employeeCount}`);
     }
 
+    private markLevelCompleted(level: LevelSize): void {
+        // Get current completed levels
+        const completedStr = localStorage.getItem('drunkSimCompletedLevels') || '[]';
+        let completed: LevelSize[] = [];
+        try {
+            completed = JSON.parse(completedStr);
+        } catch (error) {
+            console.error('Failed to parse completed levels:', error);
+        }
+
+        // Add this level if not already completed
+        if (!completed.includes(level)) {
+            completed.push(level);
+            localStorage.setItem('drunkSimCompletedLevels', JSON.stringify(completed));
+            console.log(`✅ Level ${level} marked as completed`);
+        }
+    }
+
     private showLevelComplete(): void {
         console.log('🎉 Level Complete!');
+
+        // Mark this level as completed
+        this.markLevelCompleted(this.gameState.currentLevel);
 
         // Pause the game
         this.physics.pause();

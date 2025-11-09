@@ -224,3 +224,5 @@ If you build upon this project, please provide attribution to the original autho
 Created by Mat Gilbert
 
 Built with Phaser 3, TypeScript, and Vite. Claude helped too.
+
+🍺 Pour one out for the homies who ain't with us no mo 🫡

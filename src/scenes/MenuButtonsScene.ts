@@ -19,17 +19,11 @@ export class MenuButtonsScene extends Phaser.Scene {
         // Auto-select default map so game is ready to play immediately
         this.selectedMap = null; // null = default map
 
-        // === FREE GAME SECTION ===
-        const sectionY = height / 2 + 100;
+        // Check which levels are unlocked
+        const unlockedLevels = this.getUnlockedLevels();
 
-        // "Free Game" header
-        const freeGameHeader = this.add.text(width / 2, sectionY, 'FREE GAME', {
-            fontSize: '40px',
-            color: '#FFD700',
-            fontFamily: 'Pixelify Sans, sans-serif',
-            fontStyle: '900'
-        });
-        freeGameHeader.setOrigin(0.5);
+        // === LEVEL SELECTION (no header) ===
+        const sectionY = height / 2 + 100;
 
         // Level buttons (3 in a row)
         const levelButtonWidth = 280;
@@ -37,24 +31,25 @@ export class MenuButtonsScene extends Phaser.Scene {
         const levelButtonSpacing = 20;
         const totalWidth = (levelButtonWidth * 3) + (levelButtonSpacing * 2);
         const startX = width / 2 - totalWidth / 2 + levelButtonWidth / 2;
-        const levelY = sectionY + 100;
+        const levelY = sectionY + 50;
 
         const levels = [
-            { size: LevelSize.MINI, label: 'Level 1', color: 0x10b981 },
-            { size: LevelSize.SMALL, label: 'Level 2', color: 0x3b82f6 },
-            { size: LevelSize.MEDIUM, label: 'Level 3', color: 0xf59e0b }
+            { size: LevelSize.MINI, label: 'Level 1', color: 0x10b981, requiredLevel: null },
+            { size: LevelSize.SMALL, label: 'Level 2', color: 0x3b82f6, requiredLevel: LevelSize.MINI },
+            { size: LevelSize.MEDIUM, label: 'Level 3', color: 0xf59e0b, requiredLevel: LevelSize.SMALL }
         ];
 
         levels.forEach((level, index) => {
             const x = startX + (index * (levelButtonWidth + levelButtonSpacing));
             const config = LEVEL_CONFIGS[level.size];
+            const isUnlocked = level.requiredLevel === null || unlockedLevels.includes(level.requiredLevel);
 
-            const bg = this.add.rectangle(x, levelY, levelButtonWidth, levelButtonHeight, level.color);
-            bg.setStrokeStyle(4, 0xFFFFFF);
+            const bg = this.add.rectangle(x, levelY, levelButtonWidth, levelButtonHeight, isUnlocked ? level.color : 0x555555);
+            bg.setStrokeStyle(4, isUnlocked ? 0xFFFFFF : 0x888888);
 
-            const text = this.add.text(x, levelY - 15, level.label, {
+            const text = this.add.text(x, levelY - 15, isUnlocked ? level.label : '🔒 Locked', {
                 fontSize: '32px',
-                color: '#FFFFFF',
+                color: isUnlocked ? '#FFFFFF' : '#999999',
                 fontFamily: 'Pixelify Sans, sans-serif',
                 fontStyle: '700'
             });
@@ -62,51 +57,44 @@ export class MenuButtonsScene extends Phaser.Scene {
 
             const subtext = this.add.text(x, levelY + 20, `$${config.cashThreshold}`, {
                 fontSize: '20px',
-                color: '#FFFF00',
+                color: isUnlocked ? '#FFFF00' : '#666666',
                 fontFamily: 'Pixelify Sans, sans-serif'
             });
             subtext.setOrigin(0.5);
 
-            bg.setInteractive({ useHandCursor: true });
-            bg.on('pointerover', () => {
-                bg.setScale(1.05);
-                text.setScale(1.05);
-                subtext.setScale(1.05);
-            });
-            bg.on('pointerout', () => {
-                bg.setScale(1);
-                text.setScale(1);
-                subtext.setScale(1);
-            });
-            bg.on('pointerdown', () => {
-                confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 }
+            if (isUnlocked) {
+                bg.setInteractive({ useHandCursor: true });
+                bg.on('pointerover', () => {
+                    bg.setScale(1.05);
+                    text.setScale(1.05);
+                    subtext.setScale(1.05);
                 });
+                bg.on('pointerout', () => {
+                    bg.setScale(1);
+                    text.setScale(1);
+                    subtext.setScale(1);
+                });
+                bg.on('pointerdown', () => {
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
 
-                this.time.delayedCall(500, () => {
-                    this.scene.stop('BootAnimationScene');
-                    this.registry.set('selectedLevel', level.size);
-                    this.scene.start('GameScene', { selectedLevel: level.size });
+                    this.time.delayedCall(500, () => {
+                        this.scene.stop('BootAnimationScene');
+                        this.registry.set('selectedLevel', level.size);
+                        this.scene.start('GameScene', { selectedLevel: level.size });
+                    });
                 });
-            });
+            }
         });
 
-        // === PREMIUM SECTION ===
-        const premiumY = levelY + 180;
+        // === BUTTONS ===
+        const buttonsY = levelY + 180;
 
-        // "Premium" header
-        const premiumHeader = this.add.text(width / 2, premiumY, 'PREMIUM', {
-            fontSize: '32px',
-            color: '#C0C0C0',
-            fontFamily: 'Pixelify Sans, sans-serif',
-            fontStyle: '700'
-        });
-        premiumHeader.setOrigin(0.5);
-
-        // START button (custom maps, premium feature)
-        const startY = premiumY + 80;
+        // START button (custom maps)
+        const startY = buttonsY;
         const startBg = this.add.rectangle(width / 2, startY, 700, 100, 0x228B22);
         startBg.setStrokeStyle(4, 0xFFFFFF);
 
@@ -147,7 +135,7 @@ export class MenuButtonsScene extends Phaser.Scene {
         const scanBg = this.add.rectangle(width / 2, scanY, 700, 100, 0xFF6B35);
         scanBg.setStrokeStyle(4, 0xFFFFFF);
 
-        const scanText = this.add.text(width / 2, scanY, '📸 SCAN QR', {
+        const scanText = this.add.text(width / 2, scanY, '📸 SCAN QR 📱', {
             fontSize: '36px',
             color: '#FFD700',
             fontFamily: 'Pixelify Sans, sans-serif',
@@ -287,5 +275,16 @@ export class MenuButtonsScene extends Phaser.Scene {
             statusEl.textContent = '❌ Camera access denied';
             setTimeout(() => stopScanning(), 2000);
         });
+    }
+
+    private getUnlockedLevels(): LevelSize[] {
+        // Get completed levels from localStorage
+        const completedStr = localStorage.getItem('drunkSimCompletedLevels') || '[]';
+        try {
+            return JSON.parse(completedStr) as LevelSize[];
+        } catch (error) {
+            console.error('Failed to parse completed levels:', error);
+            return [];
+        }
     }
 }
