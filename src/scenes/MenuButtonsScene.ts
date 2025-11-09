@@ -55,6 +55,8 @@ export class MenuButtonsScene extends Phaser.Scene {
 
             // Start game scene after a brief delay for confetti effect
             this.time.delayedCall(500, () => {
+                // Stop boot animation scene before starting game
+                this.scene.stop('BootAnimationScene');
                 this.scene.start('GameScene', { selectedMap: this.selectedMap });
             });
         });
@@ -182,6 +184,7 @@ export class MenuButtonsScene extends Phaser.Scene {
 
                             // Store in localStorage and start game
                             localStorage.setItem('scannedMap', mapData);
+                            this.scene.stop('BootAnimationScene');
                             this.scene.start('GameScene', { scannedMapData: mapData });
                         } catch (error) {
                             console.error('Failed to import map:', error);
