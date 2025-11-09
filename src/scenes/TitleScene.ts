@@ -17,6 +17,22 @@ export class TitleScene extends Phaser.Scene {
         // Background color (dark)
         this.cameras.main.setBackgroundColor('#1a1a1a');
 
+        // First beer emoji - layered behind text (moved down 1 inch = ~96px from original position)
+        const beer1 = this.add.text(width / 2, 372, '🍺', {
+            fontSize: '400px',
+            align: 'center'
+        });
+        beer1.setOrigin(0.5);
+        beer1.setAlpha(0.8);
+
+        // Second beer emoji - offset animation
+        const beer2 = this.add.text(width / 2, 372, '🍺', {
+            fontSize: '400px',
+            align: 'center'
+        });
+        beer2.setOrigin(0.5);
+        beer2.setAlpha(0.6);
+
         // First "DRUNK" text - wobbles and fades (moved down 1 inch = ~96px)
         const drunk1 = this.add.text(width / 2, 276, 'DRUNK', {
             fontSize: '200px',
@@ -38,22 +54,6 @@ export class TitleScene extends Phaser.Scene {
         });
         drunk2.setOrigin(0.5);
         drunk2.setAlpha(0.6);
-
-        // First beer emoji - layered on top
-        const beer1 = this.add.text(width / 2, 276, '🍺', {
-            fontSize: '200px',
-            align: 'center'
-        });
-        beer1.setOrigin(0.5);
-        beer1.setAlpha(0.8);
-
-        // Second beer emoji - offset animation
-        const beer2 = this.add.text(width / 2, 276, '🍺', {
-            fontSize: '200px',
-            align: 'center'
-        });
-        beer2.setOrigin(0.5);
-        beer2.setAlpha(0.6);
 
         // "SIMULATOR" text - static below
         const simulator = this.add.text(width / 2, 440, 'SIMULATOR', {
