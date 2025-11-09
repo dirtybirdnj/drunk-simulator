@@ -208,8 +208,10 @@ export class GameScene extends Phaser.Scene {
         this.cameras.main.setBounds(0, 0, this.MAP_COLS * this.TILE_SIZE, this.MAP_ROWS * this.TILE_SIZE);
 
         // Calculate zoom to fill viewport with smaller maps
+        // Reserve space for editor UI bar at bottom (100px)
+        const UI_BAR_HEIGHT = 100;
         const gameWidth = 1024;  // Canvas width from config
-        const gameHeight = 1824; // Canvas height from config
+        const gameHeight = 1824 - UI_BAR_HEIGHT; // Canvas height minus UI bar
         const mapPixelWidth = this.MAP_COLS * this.TILE_SIZE;
         const mapPixelHeight = this.MAP_ROWS * this.TILE_SIZE;
 
@@ -223,7 +225,7 @@ export class GameScene extends Phaser.Scene {
         const zoom = Math.min(zoomX, zoomY);
 
         this.cameras.main.setZoom(zoom);
-        console.log(`📷 Camera zoom set to ${zoom.toFixed(2)}x (map: ${this.MAP_COLS}×${this.MAP_ROWS}, pixels: ${mapPixelWidth}×${mapPixelHeight})`);
+        console.log(`📷 Camera zoom set to ${zoom.toFixed(2)}x (map: ${this.MAP_COLS}×${this.MAP_ROWS}, pixels: ${mapPixelWidth}×${mapPixelHeight}, available height: ${gameHeight})`);
 
         this.cameras.main.startFollow(this.player, false, 0.08, 0.08);
 
