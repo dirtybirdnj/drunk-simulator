@@ -945,6 +945,66 @@ const map: number[][] = [
                         npc.setVelocity(0, 0);
                     }
                 } else if (state === 'waiting') {
+                    // Check if this patron is sharing a tile with others
+                    let patronsAtSameTile = 0;
+                    this.npcs.children.entries.forEach((other: any) => {
+                        if (other === npc) return;
+                        if (other.getData('type') !== 'patron') return;
+                        const otherState = other.getData('state');
+                        if (otherState !== 'waiting') return;
+
+                        // Check if within same tile (32px)
+                        const dx = other.x - npc.x;
+                        const dy = other.y - npc.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 32) patronsAtSameTile++;
+                    });
+
+                    // If sharing a tile, try to migrate to an empty tile
+                    if (patronsAtSameTile > 0) {
+                        // Find empty service zone tiles
+                        let emptyZone: {x: number, y: number, width: number, height: number} | null = null;
+                        let closestDist = Infinity;
+
+                        this.barServiceZones.forEach(zone => {
+                            const zoneCenterX = zone.x + zone.width / 2;
+                            const zoneCenterY = zone.y + zone.height / 2;
+
+                            // Count patrons in this zone
+                            let patronsInZone = 0;
+                            this.npcs.children.entries.forEach((other: any) => {
+                                if (other.getData('type') !== 'patron') return;
+                                const otherState = other.getData('state');
+                                if (otherState !== 'waiting' && otherState !== 'thirsty') return;
+
+                                const otherDx = other.x - zoneCenterX;
+                                const otherDy = other.y - zoneCenterY;
+                                const otherDist = Math.sqrt(otherDx * otherDx + otherDy * otherDy);
+                                if (otherDist < 32) patronsInZone++;
+                            });
+
+                            // Only consider empty zones
+                            if (patronsInZone === 0) {
+                                const dx = zoneCenterX - npc.x;
+                                const dy = zoneCenterY - npc.y;
+                                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                                if (dist < closestDist) {
+                                    closestDist = dist;
+                                    emptyZone = zone;
+                                }
+                            }
+                        });
+
+                        // Migrate to empty zone if found
+                        if (emptyZone) {
+                            console.log(`🚶 Patron migrating from crowded tile to empty zone`);
+                            npc.setData('state', 'thirsty');
+                            npc.setData('waitStartTime', 0);
+                            return;
+                        }
+                    }
+
                     // Patrons waiting for service must stand STILL in service zone
                     npc.setVelocity(0, 0);
 
@@ -1687,6 +1747,27 @@ const map: number[][] = [
                         vy: -40, // Rise upward
                         life: 1.5 // 1.5 seconds
                     });
+
+                    // Reset bartender to face service zones again
+                    const barIndex = bartender.getData('barIndex');
+                    const nearbyZones = this.barServiceZones.filter(zone => {
+                        const dx = (zone.x + zone.width / 2) - bartender.x;
+                        const dy = (zone.y + zone.height / 2) - bartender.y;
+                        return Math.sqrt(dx * dx + dy * dy) < 150;
+                    });
+
+                    if (nearbyZones.length > 0) {
+                        let avgX = 0;
+                        let avgY = 0;
+                        nearbyZones.forEach(zone => {
+                            avgX += zone.x + zone.width / 2;
+                            avgY += zone.y + zone.height / 2;
+                        });
+                        avgX /= nearbyZones.length;
+                        avgY /= nearbyZones.length;
+
+                        bartender.setData('facingAngle', Math.atan2(avgY - bartender.y, avgX - bartender.x));
+                    }
 
                     bartender.setData('state', 'idle');
                     console.log('💰 Ka-ching! Sale registered, back to idle');
