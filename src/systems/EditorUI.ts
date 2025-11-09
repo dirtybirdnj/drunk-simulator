@@ -39,15 +39,19 @@ export class EditorUI {
 
     create(): void {
         const { width, height } = this.scene.cameras.main;
+        console.log('📐 Creating EditorUI - Camera size:', width, 'x', height);
 
-        // Create bottom bar container
-        this.bottomBar = this.scene.add.container(0, height - 100);
+        // Create bottom bar container - positioned at absolute bottom
+        this.bottomBar = this.scene.add.container(0, 0);
         this.bottomBar.setScrollFactor(0);
-        this.bottomBar.setDepth(1000);
+        this.bottomBar.setDepth(10000); // Very high depth to ensure it's on top
 
-        // Background for bottom bar
-        const barBg = this.scene.add.rectangle(width / 2, 50, width, 100, 0x000000, 0.9);
+        // Background for bottom bar - positioned at bottom of screen
+        const barY = height - 50; // Center of 100px bar at bottom
+        const barBg = this.scene.add.rectangle(width / 2, barY, width, 100, 0x000000, 0.95);
         this.bottomBar.add(barBg);
+
+        console.log('✅ Created bottom bar at y:', barY);
 
         // Create tile palette
         this.createTilePalette();
@@ -63,13 +67,18 @@ export class EditorUI {
     }
 
     private createTilePalette(): void {
+        const { height } = this.scene.cameras.main;
+        const barY = height - 50;
+
         const startX = 60;
         const tileSize = 40;
         const spacing = 10;
 
+        console.log('🎨 Creating tile palette with', this.FREE_TILES.length, 'tiles at y:', barY);
+
         this.FREE_TILES.forEach((tileType, index) => {
             const x = startX + (index * (tileSize + spacing));
-            const y = 50;
+            const y = barY;
 
             // Tile background
             const bg = this.scene.add.rectangle(x, y, tileSize, tileSize, 0x333333);
@@ -106,12 +115,16 @@ export class EditorUI {
 
         // Select first tile by default
         this.selectTile(this.FREE_TILES[0]);
+
+        console.log('✅ Created', this.paletteTiles.size, 'palette tiles');
     }
 
     private createModeButton(): void {
-        const { width } = this.scene.cameras.main;
+        const { width, height } = this.scene.cameras.main;
         const x = width - 120;
-        const y = 50;
+        const y = height - 50;
+
+        console.log('🔘 Creating START button at:', x, y);
 
         this.modeButton = this.scene.add.container(x, y);
 
@@ -136,11 +149,14 @@ export class EditorUI {
     }
 
     private createPlaybackControls(): void {
-        const { width } = this.scene.cameras.main;
+        const { width, height } = this.scene.cameras.main;
         const centerX = width - 300;
+        const y = height - 50;
 
-        this.playbackControls = this.scene.add.container(centerX, 50);
+        this.playbackControls = this.scene.add.container(centerX, y);
         this.playbackControls.setVisible(false);
+
+        console.log('🎮 Created playback controls at:', centerX, y);
 
         const buttonData = [
             { x: -120, label: '🐌 Slow', scale: 0.5 },
@@ -196,10 +212,12 @@ export class EditorUI {
     }
 
     private setMode(mode: EditorMode): void {
+        console.log('🔄 Switching to mode:', mode);
         this.mode = mode;
 
         if (mode === EditorMode.EDIT) {
             // Show palette, hide playback controls
+            console.log('  → Showing palette tiles');
             this.paletteTiles.forEach(bg => bg.setVisible(true));
             this.playbackControls.setVisible(false);
 
@@ -209,15 +227,16 @@ export class EditorUI {
 
             // Enable grid clicking
             this.enableGridEditing();
+            console.log('  → Grid editing enabled');
         } else {
             // Hide palette, show playback controls
+            console.log('  → Hiding palette, showing playback controls');
             this.paletteTiles.forEach(bg => bg.setVisible(false));
             this.playbackControls.setVisible(true);
 
-            // Update button (now hidden in playback controls)
-
             // Disable grid editing
             this.disableGridEditing();
+            console.log('  → Grid editing disabled');
         }
     }
 
