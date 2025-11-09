@@ -565,7 +565,7 @@ export class TitleScene extends Phaser.Scene {
                 editorText.setScale(1);
             });
             editorBg.on('pointerdown', () => {
-                window.open('map-editor.html', '_blank');
+                (window as any).showEditor();
             });
         }
     }

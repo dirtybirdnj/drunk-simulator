@@ -315,6 +315,9 @@
             <button onclick="centerMap()">🎯 Center</button>
             <button id="undo-btn" onclick="undo()" disabled>↩️ Undo (0)</button>
             <button onclick="loadFromImage()">Load from PNG</button>
+
+            <!-- Back to Game Button -->
+            <button class="cta-button" onclick="backToGame()" style="margin-top: 20px; background: #10b981;">BACK 📱</button>
         </div>
     </div>
 
@@ -1155,6 +1158,21 @@
         requestAnimationFrame(() => {
             centerOnCameraStart();
         });
+
+        // ============================================================
+        // BACK TO GAME BUTTON
+        // ============================================================
+
+        /**
+         * Return to game view (when loaded in iframe)
+         */
+        function backToGame() {
+            if (window.parent && window.parent.hideEditor) {
+                window.parent.hideEditor();
+            } else {
+                document.getElementById('status').textContent = '⚠️ Not running in game view - open from main game';
+            }
+        }
     </script>
 </body>
 </html>
