@@ -29,8 +29,8 @@ export class GameScene extends Phaser.Scene {
     private smokeParticles: Array<{x: number, y: number, alpha: number, vx: number, vy: number, life: number}> = [];
 
     // Map dimensions (40×70 = 2,800 tiles - optimized for QR code compression)
-    private readonly MAP_COLS = 40;
-    private readonly MAP_ROWS = 70;
+    private MAP_COLS = 40;
+    private MAP_ROWS = 70;
     private readonly TILE_SIZE = 32;
 
     // Tile types
@@ -263,9 +263,23 @@ export class GameScene extends Phaser.Scene {
         // ============================================================
 
         // Use selected map if available, otherwise use default
-        // Blank 40×70 placeholder map - design your new base map in the map editor!
-        // All tiles start as street (0). Use map-editor.html to design and save your map.
-        const map: number[][] = Array(70).fill(null).map(() => Array(40).fill(0));
+        let map: number[][];
+
+        if (this.selectedMapData) {
+            // Use the loaded map from editor or saved maps
+            map = this.selectedMapData;
+            // Update map dimensions to match loaded map
+            this.MAP_ROWS = map.length;
+            this.MAP_COLS = map[0]?.length || 40;
+            console.log(`📍 Building map from loaded data: ${this.MAP_COLS}×${this.MAP_ROWS}`);
+        } else {
+            // Blank 40×70 placeholder map - design your new base map in the map editor!
+            // All tiles start as street (0). Use map-editor.html to design and save your map.
+            map = Array(70).fill(null).map(() => Array(40).fill(0));
+            this.MAP_ROWS = 70;
+            this.MAP_COLS = 40;
+            console.log('📍 Using default map');
+        }
         // Find player start position (marked with 8)
         let playerStartCol = 16;
         let playerStartRow = 31;
