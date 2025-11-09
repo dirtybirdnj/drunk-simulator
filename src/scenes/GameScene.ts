@@ -1406,6 +1406,13 @@ const map: number[][] = [
                 bartender.setData('facingAngle', newFacing);
             }
 
+            // Debug: Log bartender state every 2 seconds
+            const lastLogTime = bartender.getData('lastLogTime') || 0;
+            if (Date.now() - lastLogTime > 2000) {
+                console.log(`👔 Bartender state: ${bartenderState}, facingAngle: ${(bartender.getData('facingAngle') * 180 / Math.PI).toFixed(0)}°`);
+                bartender.setData('lastLogTime', Date.now());
+            }
+
             if (bartenderState === 'idle') {
 
                 // Find closest waiting customer in bartender's vision cone
