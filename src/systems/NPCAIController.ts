@@ -1017,6 +1017,9 @@ export class NPCAIController {
                             target.setData('beerAmount', 100);
                             target.setData('waitStartTime', 0); // Reset wait timer!
 
+                            // Track beer poured
+                            this.scene.beerPoured();
+
                         // Show beer icon
                         if (target === this.player) {
                             this.playerBeerIcon.setVisible(true);

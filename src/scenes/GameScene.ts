@@ -38,6 +38,11 @@ export class GameScene extends Phaser.Scene {
     private cashText!: Phaser.GameObjects.Text;
     private levelText!: Phaser.GameObjects.Text;
 
+    // Game statistics
+    private gameStartTime: number = 0;
+    private beersPoured: number = 0;
+    private statsText!: Phaser.GameObjects.Text;
+
     // Map dimensions (40×70 = 2,800 tiles - optimized for QR code compression)
     private MAP_COLS = 40;
     private MAP_ROWS = 70;
@@ -97,6 +102,8 @@ export class GameScene extends Phaser.Scene {
             cashEarned: 0,
             levelComplete: false
         };
+        this.gameStartTime = Date.now();
+        this.beersPoured = 0;
         console.log(`🎮 Starting ${LEVEL_CONFIGS[selectedLevel].name} - Goal: $${LEVEL_CONFIGS[selectedLevel].cashThreshold}`);
     }
 
@@ -247,6 +254,16 @@ export class GameScene extends Phaser.Scene {
         });
         this.cashText.setScrollFactor(0);
         this.cashText.setDepth(1000);
+
+        // Stats bar at bottom
+        this.statsText = this.add.text(10, this.cameras.main.height - 35, '', {
+            fontSize: '14px',
+            color: '#fff',
+            backgroundColor: '#000',
+            padding: { x: 8, y: 5 }
+        });
+        this.statsText.setScrollFactor(0);
+        this.statsText.setDepth(1000);
 
         // Initialize NPC spawner
         this.npcSpawner = new NPCSpawner(this, this.npcs, this.walls, this.TILE_SIZE, this.barServiceZones);
@@ -464,6 +481,9 @@ export class GameScene extends Phaser.Scene {
         // NPC AI
         this.npcAIController.updateNPCAI();
 
+        // Update stats display
+        this.updateStats();
+
         // Check for level completion
         if (!this.gameState.levelComplete) {
             const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];
@@ -479,6 +499,29 @@ export class GameScene extends Phaser.Scene {
         this.gameState.cashEarned += amount;
         const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];
         this.cashText.setText(`$${this.gameState.cashEarned} / $${levelConfig.cashThreshold}`);
+    }
+
+    // Public method for NPCAIController to track beers poured
+    public beerPoured(): void {
+        this.beersPoured++;
+    }
+
+    // Update stats display
+    private updateStats(): void {
+        const elapsed = Date.now() - this.gameStartTime;
+        const minutes = Math.floor(elapsed / 60000);
+        const seconds = Math.floor((elapsed % 60000) / 1000);
+        const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        // Count patrons and employees
+        let patronCount = 0;
+        let employeeCount = 0;
+        this.npcs.children.entries.forEach((npc: any) => {
+            if (npc.getData('type') === 'patron') patronCount++;
+            if (npc.getData('type') === 'staff') employeeCount++;
+        });
+
+        this.statsText.setText(`⏱️ ${timeStr} | 💰 $${this.gameState.cashEarned} | 🍺 ${this.beersPoured} | 👥 ${patronCount} | 👔 ${employeeCount}`);
     }
 
     private showLevelComplete(): void {
