@@ -50,7 +50,7 @@ export class TitleScene extends Phaser.Scene {
         simulator.setOrigin(0.5);
 
         // Description text
-        const description = this.add.text(width / 2, 440, 'A simulation game to experiment with crowd dynamics\nby making your own bar', {
+        const description = this.add.text(width / 2, 440, 'A simulation game to experiment\nwith crowd dynamics by making a bar', {
             fontSize: '28px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
@@ -129,7 +129,7 @@ export class TitleScene extends Phaser.Scene {
         const startBg = this.add.rectangle(width / 2, startY, 500, 90, 0x228B22);
         startBg.setStrokeStyle(6, 0xFFFFFF);
 
-        const startText = this.add.text(width / 2, startY, '🍻 START GAME 🍹', {
+        const startText = this.add.text(width / 2, startY, '🍻 START 🍹', {
             fontSize: '42px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
