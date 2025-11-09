@@ -1442,30 +1442,6 @@ const map: number[][] = [
 
             const bartenderState = bartender.getData('state');
 
-            // Bartenders ALWAYS scan by rotating - regardless of state
-            const scanDirection = bartender.getData('scanDirection') || 1;
-            const currentFacing = bartender.getData('facingAngle');
-
-            // Scan speed: rotate ~60 degrees per second at 60fps
-            const scanSpeed = Math.PI / 3 / 60;  // 60 degrees/sec
-            const newFacing = currentFacing + (scanSpeed * scanDirection);
-
-            // Check if vision cone edge is hitting a wall
-            const coneHalfAngle = Math.PI / 2.5 / 2;  // Half of cone width
-            const leftEdge = newFacing - coneHalfAngle;
-            const rightEdge = newFacing + coneHalfAngle;
-
-            const hitWallLeft = this.isWallInDirection(bartender.x, bartender.y, leftEdge, 160);
-            const hitWallRight = this.isWallInDirection(bartender.x, bartender.y, rightEdge, 160);
-
-            // Reverse direction if either edge hits a wall
-            if ((scanDirection > 0 && hitWallRight) || (scanDirection < 0 && hitWallLeft)) {
-                bartender.setData('scanDirection', -scanDirection);
-            } else {
-                // Update facing angle
-                bartender.setData('facingAngle', newFacing);
-            }
-
             // Debug: Log bartender state every 2 seconds
             const lastLogTime = bartender.getData('lastLogTime') || 0;
             if (Date.now() - lastLogTime > 2000) {
@@ -1474,6 +1450,29 @@ const map: number[][] = [
             }
 
             if (bartenderState === 'idle') {
+                // Bartenders in idle state scan by rotating their vision cone
+                const scanDirection = bartender.getData('scanDirection') || 1;
+                const currentFacing = bartender.getData('facingAngle');
+
+                // Scan speed: rotate ~60 degrees per second at 60fps
+                const scanSpeed = Math.PI / 3 / 60;  // 60 degrees/sec
+                const newFacing = currentFacing + (scanSpeed * scanDirection);
+
+                // Check if vision cone edge is hitting a wall
+                const coneHalfAngle = Math.PI / 2.5 / 2;  // Half of cone width
+                const leftEdge = newFacing - coneHalfAngle;
+                const rightEdge = newFacing + coneHalfAngle;
+
+                const hitWallLeft = this.isWallInDirection(bartender.x, bartender.y, leftEdge, 160);
+                const hitWallRight = this.isWallInDirection(bartender.x, bartender.y, rightEdge, 160);
+
+                // Reverse direction if either edge hits a wall
+                if ((scanDirection > 0 && hitWallRight) || (scanDirection < 0 && hitWallLeft)) {
+                    bartender.setData('scanDirection', -scanDirection);
+                } else {
+                    // Update facing angle for scanning
+                    bartender.setData('facingAngle', newFacing);
+                }
 
                 // Find closest waiting customer in bartender's vision cone
                 const allWaitingCustomers: any[] = [];
