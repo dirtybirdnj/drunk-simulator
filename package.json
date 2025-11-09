@@ -1,6 +1,6 @@
 {
   "name": "drunk-simulator",
-  "version": "1.0.0",
+  "version": "1.1.74",
   "description": "Top-down bar simulator with crowd dynamics",
   "main": "electron/main.js",
   "scripts": {
