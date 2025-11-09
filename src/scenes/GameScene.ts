@@ -15,7 +15,7 @@ export class GameScene extends Phaser.Scene {
     private debugText!: Phaser.GameObjects.Text;
     private beerTaps: Array<{x: number, y: number}> = [];
     private pois: Array<{x: number, y: number}> = []; // Points of Interest
-    private barServiceZones: Array<{x: number, y: number, width: number, height: number}> = [];
+    private barServiceZones: Array<{x: number, y: number, width: number, height: number, tapIndex: number}> = [];
     private bartender!: Phaser.Physics.Arcade.Sprite;
     private bartenderLineGraphics!: Phaser.GameObjects.Graphics;
     private pouringBarGraphics!: Phaser.GameObjects.Graphics;
@@ -348,7 +348,8 @@ const map: number[][] = [
                             x: (col - 1) * this.TILE_SIZE,
                             y: row * this.TILE_SIZE,
                             width: this.TILE_SIZE,
-                            height: this.TILE_SIZE
+                            height: this.TILE_SIZE,
+                            tapIndex: -1  // Will be assigned in second pass
                         });
                     }
                     // Check if there's a floor tile to the right
@@ -357,7 +358,8 @@ const map: number[][] = [
                             x: (col + 1) * this.TILE_SIZE,
                             y: row * this.TILE_SIZE,
                             width: this.TILE_SIZE,
-                            height: this.TILE_SIZE
+                            height: this.TILE_SIZE,
+                            tapIndex: -1  // Will be assigned in second pass
                         });
                     }
                 }
@@ -372,11 +374,30 @@ const map: number[][] = [
             }
         }
 
+        // Second pass: Assign each service zone to its nearest beer tap
+        this.barServiceZones.forEach((zone) => {
+            let closestTapIndex = 0;
+            let closestDist = Infinity;
+
+            this.beerTaps.forEach((tap, index) => {
+                const dx = (zone.x + zone.width / 2) - tap.x;
+                const dy = (zone.y + zone.height / 2) - tap.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < closestDist) {
+                    closestDist = dist;
+                    closestTapIndex = index;
+                }
+            });
+
+            zone.tapIndex = closestTapIndex;
+        });
+
         console.log(`📍 Created ${this.barServiceZones.length} bar service zones:`);
         this.barServiceZones.forEach((zone, i) => {
             const gridX = zone.x / this.TILE_SIZE;
             const gridY = zone.y / this.TILE_SIZE;
-            console.log(`  Zone ${i}: Grid(${gridX},${gridY}) Pixel(${zone.x},${zone.y})`);
+            console.log(`  Zone ${i}: Grid(${gridX},${gridY}) Pixel(${zone.x},${zone.y}) → Tap ${zone.tapIndex}`);
         });
     }
 
@@ -936,15 +957,19 @@ const map: number[][] = [
             const bartenderState = bartender.getData('state');
 
             if (bartenderState === 'idle') {
-                // Find closest waiting customer in service zones (tiles touching bar counters)
+                // Get this bartender's bar index (which tap they work at)
+                const bartenderBarIndex = bartender.getData('barIndex');
+
+                // Find closest waiting customer in THIS bartender's service zones only
                 const allWaitingCustomers: any[] = [];
                 let totalWaiting = 0;
 
                 // Check player
                 if (this.player.getData('state') === 'waiting') {
                     totalWaiting++;
-                    // Check if player is in a service zone (tiles touching bar)
+                    // Check if player is in a service zone that belongs to THIS bartender
                     const inServiceZone = this.barServiceZones.some(zone =>
+                        zone.tapIndex === bartenderBarIndex &&
                         this.player.x >= zone.x && this.player.x < zone.x + zone.width &&
                         this.player.y >= zone.y && this.player.y < zone.y + zone.height
                     );
@@ -962,21 +987,20 @@ const map: number[][] = [
 
                         if (!alreadyBeingServed) {
                             allWaitingCustomers.push({ entity: this.player, dist });
-                            console.log(`✓ Player in service zone @ (${Math.round(this.player.x)},${Math.round(this.player.y)})`);
+                            console.log(`✓ Bartender ${bartenderBarIndex}: Player in my service zone @ (${Math.round(this.player.x)},${Math.round(this.player.y)})`);
                         }
-                    } else {
-                        console.log(`✗ Player waiting but NOT in service zone @ (${Math.round(this.player.x)},${Math.round(this.player.y)})`);
                     }
                 }
 
-                // Check patrons in service zones
+                // Check patrons in THIS bartender's service zones
                 this.npcs.children.entries.forEach((npc: any) => {
                     if (npc.getData('type') !== 'patron') return;
                     if (npc.getData('state') !== 'waiting') return;
 
                     totalWaiting++;
-                    // Check if patron is in a service zone
+                    // Check if patron is in a service zone that belongs to THIS bartender
                     const inServiceZone = this.barServiceZones.some(zone =>
+                        zone.tapIndex === bartenderBarIndex &&
                         npc.x >= zone.x && npc.x < zone.x + zone.width &&
                         npc.y >= zone.y && npc.y < zone.y + zone.height
                     );
@@ -995,8 +1019,6 @@ const map: number[][] = [
                         if (!alreadyBeingServed) {
                             allWaitingCustomers.push({ entity: npc, dist });
                         }
-                    } else {
-                        console.log(`✗ Patron waiting but NOT in service zone @ (${Math.round(npc.x)},${Math.round(npc.y)})`);
                     }
                 });
 
