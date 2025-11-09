@@ -49,6 +49,15 @@ export class TitleScene extends Phaser.Scene {
         });
         simulator.setOrigin(0.5);
 
+        // Description text
+        const description = this.add.text(width / 2, 440, 'A simulation game to experiment with crowd dynamics\nby making your own bar', {
+            fontSize: '20px',
+            color: '#CCCCCC',
+            fontFamily: 'Arial, sans-serif',
+            align: 'center'
+        });
+        description.setOrigin(0.5);
+
         // Wobble animation for first DRUNK text
         this.tweens.add({
             targets: drunk1,
