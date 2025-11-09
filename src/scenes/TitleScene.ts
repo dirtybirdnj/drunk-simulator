@@ -19,7 +19,7 @@ export class TitleScene extends Phaser.Scene {
 
         // First "DRUNK" text - wobbles and fades (moved down 1 inch = ~96px)
         const drunk1 = this.add.text(width / 2, 276, 'DRUNK', {
-            fontSize: '256px',
+            fontSize: '200px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
             fontStyle: 'bold',
@@ -30,7 +30,7 @@ export class TitleScene extends Phaser.Scene {
 
         // Second "DRUNK" text - offset animation, different rate
         const drunk2 = this.add.text(width / 2, 276, 'DRUNK', {
-            fontSize: '256px',
+            fontSize: '200px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
             fontStyle: 'bold',
@@ -50,7 +50,7 @@ export class TitleScene extends Phaser.Scene {
         simulator.setOrigin(0.5);
 
         // Description text
-        const description = this.add.text(width / 2, 540, 'A simulation game to experiment\nwith crowd dynamics by making a bar', {
+        const description = this.add.text(width / 2, 588, 'A simulation game to experiment\nwith crowd dynamics by making a bar', {
             fontSize: '28px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
@@ -132,7 +132,7 @@ export class TitleScene extends Phaser.Scene {
         startBg.setStrokeStyle(10, 0xFFFFFF);
 
         const startText = this.add.text(width / 2, startY, '🍻 START 🍹', {
-            fontSize: '168px',
+            fontSize: '120px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
             fontStyle: 'bold'
