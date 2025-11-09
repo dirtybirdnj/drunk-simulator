@@ -1,0 +1,30 @@
+{
+  "width": 32,
+  "height": 34,
+  "tileSize": 32,
+  "playerStart": {
+    "x": 16,
+    "y": 32
+  },
+  "legend": {
+    "0": "street (grey #707070)",
+    "1": "bar_floor (tan #D2B48C)",
+    "2": "patio (grey #A0A0A0)",
+    "3": "wall (brown #8B4513)",
+    "4": "door (black #000000 - passable)",
+    "5": "bar_counter (dark brown #654321 - impassable)",
+    "6": "bartender_zone (blue #4169E1)",
+    "7": "stairs (grey-brown #6B5F47)"
+  },
+  "rows": [
+    "Comment: Row 0 - Top wall",
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    "Comment: Rows 1-4 - Back Patio",
+    [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
+    [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
+    [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
+    "Comment: Row 5 - Patio door (black=passable)",
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    "Comment: EDIT THIS - describe your exact layout for rows 6-33"
+  ]
+}

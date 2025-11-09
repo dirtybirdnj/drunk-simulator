@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Drunk Simulator - Map Editor</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #222;
+            color: #fff;
+            padding: 20px;
+        }
+        #grid-container {
+            flex: 1;
+            overflow: auto;
+            border: 2px solid #fff;
+            background: #000;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #grid {
+            display: inline-block;
+            transform-origin: center center;
+            transition: transform 0.2s;
+            position: relative;
+        }
+        .zoom-controls {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .zoom-label {
+            background: #444;
+            padding: 10px 15px;
+            font-family: monospace;
+            font-size: 14px;
+            border-radius: 3px;
+        }
+        .row {
+            display: flex;
+            height: 32px;
+        }
+        .cell {
+            width: 32px;
+            height: 32px;
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+        }
+        .cell:hover {
+            border: 1px solid #fff;
+        }
+        .palette {
+            margin: 20px 0;
+        }
+        .palette-tile {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            margin: 3px;
+            border: 2px solid #fff;
+            cursor: pointer;
+        }
+        .palette-tile.selected {
+            border: 2px solid #0f0;
+            box-shadow: 0 0 8px #0f0;
+        }
+        button {
+            background: #666;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-family: monospace;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #888;
+        }
+        button:disabled {
+            background: #444;
+            color: #888;
+            cursor: not-allowed;
+        }
+        .cta-button {
+            background: #2563eb;
+            color: #fff;
+            font-weight: bold;
+        }
+        .cta-button:hover {
+            background: #1d4ed8;
+        }
+        .fill-preview {
+            position: absolute;
+            border: 3px solid #00ff00;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 0 0 10px #00ff00;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            height: calc(100vh - 140px);
+        }
+        .palette-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-shrink: 0;
+            width: 80px;
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+        }
+        .buttons-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-shrink: 0;
+            width: 180px;
+            overflow-y: auto;
+            max-height: 100%;
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+        }
+        #output {
+            background: #000;
+            padding: 10px;
+            margin: 20px 0;
+            max-height: 400px;
+            overflow-y: scroll;
+            font-size: 11px;
+        }
+        .info {
+            background: #333;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Drunk Simulator - Map Editor</h1>
+
+    <div class="container">
+        <!-- Left: Tile Palette (Vertical) -->
+        <div class="palette-column">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile" data-type="0" style="background: #707070;"></div>
+                <span style="font-size: 9px;">Street</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile" data-type="1" style="background: #D2B48C;"></div>
+                <span style="font-size: 9px;">Bar Floor</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile" data-type="2" style="background: #A0A0A0;"></div>
+                <span style="font-size: 9px;">Patio</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile" data-type="3" style="background: #8B4513;"></div>
+                <span style="font-size: 9px;">Wall</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile" data-type="4" style="background: #000000; border-color: #fff;"></div>
+                <span style="font-size: 9px;">Door</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile selected" data-type="5" style="background: #654321;"></div>
+                <span style="font-size: 9px;">Counter</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile" data-type="6" style="background: #4169E1;"></div>
+                <span style="font-size: 9px;">Staff</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile" data-type="7" style="background: #6B5F47;"></div>
+                <span style="font-size: 9px;">Stairs</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile" data-type="8" style="background: #00ff00;"></div>
+                <span style="font-size: 9px;">Player</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile" data-type="9" style="background: #FFFF00;"></div>
+                <span style="font-size: 9px;">Beer Tap</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile" data-type="10" style="background: #ff0000;"></div>
+                <span style="font-size: 9px;">Employee</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile" data-type="11" style="background: #FFA500;"></div>
+                <span style="font-size: 9px;">Patron Spawn</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile" data-type="12" style="background: #00FFFF;"></div>
+                <span style="font-size: 9px;">Camera Start</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                <div class="palette-tile" data-type="13" style="background: #9B30FF;"></div>
+                <span style="font-size: 9px;">POI</span>
+            </div>
+        </div>
+
+        <!-- Center: Grid -->
+        <div id="grid-container">
+            <div id="grid"></div>
+        </div>
+
+        <!-- Right: Buttons (Vertical) -->
+        <div class="buttons-column">
+            <button class="cta-button" onclick="copyToClipboard()">📋 Copy Map</button>
+            <div class="zoom-controls">
+                <button onclick="zoomIn()">Zoom +</button>
+                <button onclick="zoomOut()">Zoom -</button>
+                <button onclick="zoomFit()">Fit All</button>
+            </div>
+            <div class="zoom-label" id="zoom-level">100%</div>
+            <button id="undo-btn" onclick="undo()" disabled>↩️ Undo (0)</button>
+            <button id="fill-btn" onclick="startFillMode()">Fill Rectangle</button>
+            <button onclick="clearGrid()">Clear All</button>
+            <button onclick="loadFromImage()">Load from PNG</button>
+        </div>
+    </div>
+
+    <div style="margin-top: 10px; padding: 10px; background: #333;">
+        <span id="status">Map ready. Paint tiles to edit.</span>
+    </div>
+
+    <script>
+        const COLORS = {
+            0: '#707070',  // Street
+            1: '#D2B48C',  // Bar floor
+            2: '#A0A0A0',  // Patio
+            3: '#8B4513',  // Wall
+            4: '#000000',  // Door
+            5: '#654321',  // Bar counter
+            6: '#4169E1',  // Staff zone
+            7: '#6B5F47',  // Stairs
+            8: '#00ff00',  // Player start marker
+            9: '#FFFF00',  // Beer tap (yellow)
+            10: '#ff0000', // Employee spawn marker
+            11: '#FFA500', // Patron spawn marker
+            12: '#00FFFF', // Camera start marker (cyan)
+            13: '#9B30FF'  // POI - Point of Interest (purple)
+        };
+
+        const COLS = 32;
+        const ROWS = 57;
+        let selectedType = 5;
+        let grid = [];
+        let isMouseDown = false;
+        let zoomLevel = 1.0;
+        let history = [];
+        const MAX_HISTORY = 20;
+        let fillMode = false;
+        let fillStart = null;
+        let fillPreview = null;
+
+        // Initialize grid with CURRENT game map (source of truth: GameScene.ts)
+        function initGrid() {
+            grid = [
+                [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+                [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
+                [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
+                [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
+                [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
+                [3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,5,5,5,5,5,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,6,6,6,6,6,6,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,6,6,6,6,6,6,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,9,6,6,5,5,9,5,5,5,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,10,5,3,3,3,3,3,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,5,3,3,3,3,3,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,5,3,3,3,3,3,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,3,3,3,3,3,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,3,3,3,3,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,3,3,3,3,3],
+                [3,3,3,3,3,3,3,3,3,3,3,3,3,3,7,7,7,7,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,3,7,7,7,7,3,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,3,7,7,7,7,3,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,3,7,7,7,7,3,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+            ];
+        }
+
+        function renderGrid() {
+            const gridEl = document.getElementById('grid');
+            gridEl.innerHTML = '';
+
+            for (let row = 0; row < ROWS; row++) {
+                const rowEl = document.createElement('div');
+                rowEl.className = 'row';
+
+                for (let col = 0; col < COLS; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.style.background = COLORS[grid[row][col]];
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+
+                    cell.addEventListener('mousedown', (e) => {
+                        if (fillMode) {
+                            e.preventDefault();
+                            handleFillClick(row, col);
+                        } else {
+                            isMouseDown = true;
+                            saveHistory(); // Save state before making changes
+                            paintCell(row, col);
+                        }
+                    });
+                    cell.addEventListener('mouseenter', () => {
+                        if (fillMode) {
+                            updateFillPreview(row, col);
+                        } else if (isMouseDown) {
+                            paintCell(row, col);
+                        }
+                    });
+                    cell.addEventListener('contextmenu', (e) => {
+                        if (fillMode) {
+                            e.preventDefault();
+                            cancelFillMode();
+                        }
+                    });
+
+                    rowEl.appendChild(cell);
+                }
+                gridEl.appendChild(rowEl);
+            }
+        }
+
+        function saveHistory() {
+            // Deep copy the grid
+            const gridCopy = grid.map(row => [...row]);
+            history.push(gridCopy);
+
+            // Limit history to MAX_HISTORY entries
+            if (history.length > MAX_HISTORY) {
+                history.shift();
+            }
+
+            updateUndoButton();
+        }
+
+        function undo() {
+            if (history.length === 0) {
+                document.getElementById('status').textContent = '⚠️ Nothing to undo!';
+                return;
+            }
+
+            // Restore previous state
+            grid = history.pop();
+            renderGrid();
+            updateUndoButton();
+            document.getElementById('status').textContent = `↩️ Undo applied (${history.length} steps remaining)`;
+        }
+
+        function updateUndoButton() {
+            const undoBtn = document.getElementById('undo-btn');
+            if (undoBtn) {
+                undoBtn.disabled = history.length === 0;
+                undoBtn.textContent = `↩️ Undo (${history.length})`;
+            }
+        }
+
+        function paintCell(row, col) {
+            // If painting a camera start tile (type 12), remove any existing one
+            if (selectedType === 12) {
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        if (grid[r][c] === 12) {
+                            grid[r][c] = 0; // Replace with street
+                            const oldCell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                            if (oldCell) {
+                                oldCell.style.background = COLORS[0];
+                            }
+                        }
+                    }
+                }
+            }
+
+            grid[row][col] = selectedType;
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            cell.style.background = COLORS[selectedType];
+            // Auto-update status
+            document.getElementById('status').textContent = `Last edit: Row ${row}, Col ${col} → Type ${selectedType}`;
+        }
+
+        document.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Escape to cancel fill mode
+            if (e.key === 'Escape' && fillMode) {
+                e.preventDefault();
+                cancelFillMode();
+            }
+            // Ctrl+Z or Cmd+Z for undo
+            else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                undo();
+            }
+        });
+
+        // Palette selection
+        document.querySelectorAll('.palette-tile').forEach(tile => {
+            tile.addEventListener('click', () => {
+                document.querySelectorAll('.palette-tile').forEach(t => t.classList.remove('selected'));
+                tile.classList.add('selected');
+                selectedType = parseInt(tile.dataset.type);
+            });
+        });
+
+        function copyToClipboard() {
+            let code = 'const map: number[][] = [\n';
+            for (let row = 0; row < ROWS; row++) {
+                code += '    [' + grid[row].join(',') + '],\n';
+            }
+            code += '];';
+
+            navigator.clipboard.writeText(code).then(() => {
+                document.getElementById('status').textContent = '✅ Map copied to clipboard!';
+                setTimeout(() => {
+                    document.getElementById('status').textContent = 'Map ready. Paint tiles to edit.';
+                }, 2000);
+            }).catch(err => {
+                document.getElementById('status').textContent = '❌ Failed to copy: ' + err;
+            });
+        }
+
+        function clearGrid() {
+            if (confirm('Clear the entire grid?')) {
+                saveHistory();
+                grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(1));
+                renderGrid();
+            }
+        }
+
+        function startFillMode() {
+            // Prevent camera start tile from being used in fill mode
+            if (selectedType === 12) {
+                document.getElementById('status').textContent = '⚠️ Cannot use Camera Start tile in Fill Rectangle mode';
+                return;
+            }
+
+            fillMode = true;
+            fillStart = null;
+            document.getElementById('status').textContent = '🔲 Fill Mode: Click first corner of rectangle';
+            document.getElementById('fill-btn').textContent = 'Cancel Fill (ESC)';
+            document.getElementById('fill-btn').onclick = cancelFillMode;
+        }
+
+        function cancelFillMode() {
+            fillMode = false;
+            fillStart = null;
+            if (fillPreview) {
+                fillPreview.remove();
+                fillPreview = null;
+            }
+            document.getElementById('status').textContent = 'Fill mode cancelled';
+            document.getElementById('fill-btn').textContent = 'Fill Rectangle';
+            document.getElementById('fill-btn').onclick = startFillMode;
+        }
+
+        function handleFillClick(row, col) {
+            if (!fillStart) {
+                // First click - set start corner
+                fillStart = {row, col};
+                document.getElementById('status').textContent = '🔲 Fill Mode: Click second corner of rectangle (or ESC/right-click to cancel)';
+            } else {
+                // Second click - fill the rectangle
+                const startRow = Math.min(fillStart.row, row);
+                const endRow = Math.max(fillStart.row, row);
+                const startCol = Math.min(fillStart.col, col);
+                const endCol = Math.max(fillStart.col, col);
+
+                saveHistory();
+                for (let r = startRow; r <= endRow; r++) {
+                    for (let c = startCol; c <= endCol; c++) {
+                        grid[r][c] = selectedType;
+                    }
+                }
+                renderGrid();
+
+                // Exit fill mode
+                cancelFillMode();
+                document.getElementById('status').textContent = `✅ Filled rectangle from (${startRow},${startCol}) to (${endRow},${endCol})`;
+            }
+        }
+
+        function updateFillPreview(row, col) {
+            if (!fillStart || !fillMode) return;
+
+            const gridEl = document.getElementById('grid');
+
+            // Remove old preview
+            if (fillPreview) {
+                fillPreview.remove();
+            }
+
+            // Calculate rectangle bounds
+            const startRow = Math.min(fillStart.row, row);
+            const endRow = Math.max(fillStart.row, row);
+            const startCol = Math.min(fillStart.col, col);
+            const endCol = Math.max(fillStart.col, col);
+
+            // Create preview element positioned relative to grid (not container)
+            fillPreview = document.createElement('div');
+            fillPreview.className = 'fill-preview';
+            fillPreview.style.position = 'absolute';
+            fillPreview.style.left = `${startCol * 32}px`;
+            fillPreview.style.top = `${startRow * 32}px`;
+            fillPreview.style.width = `${(endCol - startCol + 1) * 32}px`;
+            fillPreview.style.height = `${(endRow - startRow + 1) * 32}px`;
+
+            gridEl.appendChild(fillPreview);
+        }
+
+        // Zoom functions
+        function updateZoom() {
+            const gridEl = document.getElementById('grid');
+            gridEl.style.transform = `scale(${zoomLevel})`;
+            document.getElementById('zoom-level').textContent = `${Math.round(zoomLevel * 100)}%`;
+        }
+
+        function zoomIn() {
+            zoomLevel = Math.min(2.0, zoomLevel + 0.1);
+            updateZoom();
+        }
+
+        function zoomOut() {
+            zoomLevel = Math.max(0.1, zoomLevel - 0.1);
+            updateZoom();
+        }
+
+        function zoomFit() {
+            const container = document.getElementById('grid-container');
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+            const gridWidth = COLS * 32;
+            const gridHeight = ROWS * 32;
+
+            const scaleX = containerWidth / gridWidth;
+            const scaleY = containerHeight / gridHeight;
+
+            zoomLevel = Math.min(scaleX, scaleY) * 0.95; // 95% to add some padding
+            updateZoom();
+        }
+
+        // Position viewport at camera start tile if it exists
+        function centerOnCameraStart() {
+            const container = document.getElementById('grid-container');
+
+            // Find camera start tile (type 12) in grid
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if (grid[row][col] === 12) {
+                        // Found camera start - center it
+                        const tileX = col * 32 * zoomLevel;
+                        const tileY = row * 32 * zoomLevel;
+
+                        const centerX = tileX - (container.clientWidth / 2) + (16 * zoomLevel);
+                        const centerY = tileY - (container.clientHeight / 2) + (16 * zoomLevel);
+
+                        container.scrollLeft = Math.max(0, centerX);
+                        container.scrollTop = Math.max(0, centerY);
+
+                        console.log(`📷 Centered on camera start at row ${row}, col ${col}`);
+                        return;
+                    }
+                }
+            }
+
+            // No camera start - default to top
+            container.scrollTop = 0;
+            container.scrollLeft = 0;
+        }
+
+        // Initialize
+        initGrid();
+        renderGrid();
+
+        // Position viewport (no animation)
+        requestAnimationFrame(() => {
+            centerOnCameraStart();
+        });
+    </script>
+</body>
+</html>

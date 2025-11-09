@@ -51,3 +51,7 @@ Building features **very deliberately, one at a time**:
 - **Phaser 3.70** - Game engine with Arcade Physics
 - **TypeScript** - Type-safe development
 - **Vite** - Fast dev server and bundling
+
+## Resources
+
+- **Emoji/ASCII Dictionary**: https://gist.github.com/dkdndes/a224555858f185f1662e3384c6a410d9 (for future use)

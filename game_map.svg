@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1088" xmlns="http://www.w3.org/2000/svg">
+  <!-- Grid reference: 32 columns x 34 rows, each tile 32x32px -->
+
+  <!-- Legend -->
+  <text x="10" y="20" font-family="monospace" font-size="14" fill="#ffffff">DRUNK SIMULATOR - Game Map (32x34 grid, 32px tiles)</text>
+  <text x="10" y="40" font-family="monospace" font-size="12" fill="#A0A0A0">Grey=#A0A0A0 (Patio) | Tan=#D2B48C (Bar Floor) | Blue=#4169E1 (Staff) | Brown=#8B4513 (Walls) | DarkBrown=#654321 (Counter) | Street=#707070</text>
+
+  <!-- BACK PATIO (rows 0-5) -->
+  <rect x="0" y="0" width="1024" height="192" fill="#A0A0A0"/>
+  <text x="512" y="96" font-family="monospace" font-size="24" fill="#000000" text-anchor="middle">BACK PATIO</text>
+  <text x="512" y="120" font-family="monospace" font-size="14" fill="#000000" text-anchor="middle">Rows 0-5 (y: 0-192)</text>
+
+  <!-- Top wall -->
+  <rect x="0" y="0" width="1024" height="32" fill="#8B4513"/>
+  <!-- Side walls -->
+  <rect x="0" y="0" width="32" height="192" fill="#8B4513"/>
+  <rect x="992" y="0" width="32" height="192" fill="#8B4513"/>
+  <!-- Bottom wall with door -->
+  <rect x="0" y="160" width="448" height="32" fill="#8B4513"/>
+  <rect x="448" y="160" width="128" height="32" fill="#000000"/>
+  <text x="512" y="180" font-family="monospace" font-size="12" fill="#00ff00" text-anchor="middle">DOOR</text>
+  <rect x="576" y="160" width="448" height="32" fill="#8B4513"/>
+
+  <!-- MAIN BAR ROOM (rows 6-23) -->
+  <rect x="0" y="192" width="1024" height="576" fill="#D2B48C"/>
+  <text x="350" y="450" font-family="monospace" font-size="32" fill="#654321" text-anchor="middle">MAIN ROOM</text>
+  <text x="350" y="480" font-family="monospace" font-size="14" fill="#654321" text-anchor="middle">Rows 6-23 (y: 192-768)</text>
+
+  <!-- Side walls -->
+  <rect x="0" y="192" width="32" height="576" fill="#8B4513"/>
+  <rect x="992" y="192" width="32" height="576" fill="#8B4513"/>
+
+  <!-- L-shaped bar counter (RIGHT side) -->
+  <!-- Horizontal part (rows 9-11, cols 22-29) -->
+  <rect x="704" y="288" width="256" height="96" fill="#654321"/>
+  <text x="832" y="340" font-family="monospace" font-size="12" fill="#ffffff" text-anchor="middle">BAR</text>
+
+  <!-- Vertical part (rows 9-20, cols 27-29) -->
+  <rect x="864" y="288" width="96" height="384" fill="#654321"/>
+
+  <!-- Blue bartender zone (rows 12-20, cols 23-26) -->
+  <rect x="736" y="384" width="128" height="288" fill="#4169E1"/>
+  <text x="800" y="520" font-family="monospace" font-size="16" fill="#ffffff" text-anchor="middle">STAFF</text>
+  <text x="800" y="540" font-family="monospace" font-size="16" fill="#ffffff" text-anchor="middle">ONLY</text>
+
+  <!-- STAIRS (rows 24-26) -->
+  <rect x="0" y="768" width="1024" height="96" fill="#D2B48C"/>
+  <rect x="320" y="768" width="384" height="96" fill="#6B5F47"/>
+  <text x="512" y="820" font-family="monospace" font-size="16" fill="#000000" text-anchor="middle">STAIRS - Rows 24-26</text>
+
+  <!-- ENTRANCE (rows 27-29) -->
+  <rect x="0" y="864" width="1024" height="96" fill="#D2B48C"/>
+  <text x="512" y="916" font-family="monospace" font-size="20" fill="#654321" text-anchor="middle">ENTRANCE</text>
+  <text x="512" y="936" font-family="monospace" font-size="12" fill="#654321" text-anchor="middle">Rows 27-29 (y: 864-960)</text>
+
+  <!-- Entrance door (row 29, cols 14-17) -->
+  <rect x="0" y="928" width="448" height="32" fill="#8B4513"/>
+  <rect x="448" y="928" width="128" height="32" fill="#000000"/>
+  <text x="512" y="948" font-family="monospace" font-size="12" fill="#00ff00" text-anchor="middle">DOOR</text>
+  <rect x="576" y="928" width="448" height="32" fill="#8B4513"/>
+
+  <!-- STREET (rows 30-33) -->
+  <rect x="0" y="960" width="1024" height="128" fill="#707070"/>
+  <text x="512" y="1020" font-family="monospace" font-size="24" fill="#ffffff" text-anchor="middle">STREET (OUTSIDE)</text>
+  <text x="512" y="1044" font-family="monospace" font-size="14" fill="#ffffff" text-anchor="middle">Rows 30-33 (y: 960-1088)</text>
+
+  <!-- Player start position -->
+  <circle cx="512" cy="1050" r="16" fill="#00ff00" stroke="#ffffff" stroke-width="2"/>
+  <text x="512" y="1075" font-family="monospace" font-size="12" fill="#00ff00" text-anchor="middle">PLAYER START (512, 1050)</text>
+
+  <!-- Grid overlay (every 4 tiles for reference) -->
+  <g stroke="#ffffff" stroke-width="0.5" opacity="0.3">
+    <!-- Vertical lines every 128px (4 tiles) -->
+    <line x1="128" y1="0" x2="128" y2="1088"/>
+    <line x1="256" y1="0" x2="256" y2="1088"/>
+    <line x1="384" y1="0" x2="384" y2="1088"/>
+    <line x1="512" y1="0" x2="512" y2="1088"/>
+    <line x1="640" y1="0" x2="640" y2="1088"/>
+    <line x1="768" y1="0" x2="768" y2="1088"/>
+    <line x1="896" y1="0" x2="896" y2="1088"/>
+
+    <!-- Horizontal lines at section boundaries -->
+    <line x1="0" y1="192" x2="1024" y2="192"/>
+    <line x1="0" y1="768" x2="1024" y2="768"/>
+    <line x1="0" y1="864" x2="1024" y2="864"/>
+    <line x1="0" y1="960" x2="1024" y2="960"/>
+  </g>
+
+  <!-- Row markers -->
+  <g font-family="monospace" font-size="10" fill="#ff0000">
+    <text x="5" y="16">R0</text>
+    <text x="5" y="176">R5</text>
+    <text x="5" y="208">R6</text>
+    <text x="5" y="752">R23</text>
+    <text x="5" y="784">R24</text>
+    <text x="5" y="848">R26</text>
+    <text x="5" y="880">R27</text>
+    <text x="5" y="944">R29</text>
+    <text x="5" y="976">R30</text>
+    <text x="5" y="1072">R33</text>
+  </g>
+</svg>
