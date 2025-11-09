@@ -84,23 +84,7 @@ export class TitleScene extends Phaser.Scene {
         // Add bokeh effect to beer6
         const beer6Bokeh = beer6.postFX.addBokeh(0);
 
-        // First "DRUNK" text - Roboto Black (heaviest) with stroke
-        const drunk1 = this.add.text(width / 2, 276, 'DRUNK', {
-            fontSize: '200px',
-            color: '#FFD700',
-            fontFamily: 'Roboto, sans-serif',
-            fontStyle: '900',
-            align: 'center',
-            stroke: '#000000',
-            strokeThickness: 4
-        });
-        drunk1.setOrigin(0.5);
-        drunk1.setAlpha(0.8);
-
-        // Add bokeh effect to drunk1
-        const drunk1Bokeh = drunk1.postFX.addBokeh(0);
-
-        // Second "DRUNK" text - Open Sans
+        // Second "DRUNK" text - Open Sans (background layer)
         const drunk2 = this.add.text(width / 2, 276, 'DRUNK', {
             fontSize: '200px',
             color: '#FFD700',
@@ -142,8 +126,8 @@ export class TitleScene extends Phaser.Scene {
         // Add bokeh effect to drunk4
         const drunk4Bokeh = drunk4.postFX.addBokeh(0);
 
-        // "SIMULATOR" text - static below
-        const simulator = this.add.text(width / 2, 440, 'SIMULATOR', {
+        // "SIMULATOR" text - static below (moved down 2 inches = 192px)
+        const simulator = this.add.text(width / 2, 632, 'SIMULATOR', {
             fontSize: '64px',
             color: '#FFD700',
             fontFamily: 'Pixelify Sans, sans-serif',
@@ -151,6 +135,20 @@ export class TitleScene extends Phaser.Scene {
             align: 'center'
         });
         simulator.setOrigin(0.5);
+
+        // First "DRUNK" text - Roboto Black (TOP LAYER - no bokeh for readability)
+        const drunk1 = this.add.text(width / 2, 276, 'DRUNK', {
+            fontSize: '200px',
+            color: '#FFD700',
+            fontFamily: 'Roboto, sans-serif',
+            fontStyle: '900',
+            align: 'center',
+            stroke: '#000000',
+            strokeThickness: 4
+        });
+        drunk1.setOrigin(0.5);
+        drunk1.setAlpha(1.0); // Full opacity for readability
+        // NO bokeh effect on this layer for clarity
 
         // Description text (moved down 2 inches = ~192px total)
         const description = this.add.text(width / 2, 780, 'A simulation game to experiment\nwith crowd dynamics by making a bar', {
@@ -637,15 +635,7 @@ export class TitleScene extends Phaser.Scene {
             });
         });
 
-        // Drunk 1 bokeh - fade every 2.5 seconds (subtle)
-        this.tweens.add({
-            targets: drunk1Bokeh,
-            radius: { from: 0, to: 0.6 },
-            duration: 2500,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut'
-        });
+        // Drunk 1 - NO bokeh effect for readability (top layer)
 
         // Drunk 2 bokeh - fade every 2.8 seconds (offset start, subtle)
         this.time.delayedCall(500, () => {
