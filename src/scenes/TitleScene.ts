@@ -17,8 +17,8 @@ export class TitleScene extends Phaser.Scene {
         // Background color (dark)
         this.cameras.main.setBackgroundColor('#1a1a1a');
 
-        // First "DRUNK" text - wobbles and fades
-        const drunk1 = this.add.text(width / 2, 180, 'DRUNK', {
+        // First "DRUNK" text - wobbles and fades (moved down 1 inch = ~96px)
+        const drunk1 = this.add.text(width / 2, 276, 'DRUNK', {
             fontSize: '128px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
@@ -29,7 +29,7 @@ export class TitleScene extends Phaser.Scene {
         drunk1.setAlpha(0.8);
 
         // Second "DRUNK" text - offset animation, different rate
-        const drunk2 = this.add.text(width / 2, 180, 'DRUNK', {
+        const drunk2 = this.add.text(width / 2, 276, 'DRUNK', {
             fontSize: '128px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
@@ -40,7 +40,7 @@ export class TitleScene extends Phaser.Scene {
         drunk2.setAlpha(0.6);
 
         // "SIMULATOR" text - static below
-        const simulator = this.add.text(width / 2, 280, 'SIMULATOR', {
+        const simulator = this.add.text(width / 2, 376, 'SIMULATOR', {
             fontSize: '64px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
@@ -70,6 +70,17 @@ export class TitleScene extends Phaser.Scene {
             ease: 'Sine.easeInOut'
         });
 
+        // Grow/shrink for first DRUNK text
+        this.tweens.add({
+            targets: drunk1,
+            scaleX: { from: 0.95, to: 1.05 },
+            scaleY: { from: 0.95, to: 1.05 },
+            duration: 1800,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
         // Wobble animation for second DRUNK text - different rate, delayed start
         this.time.delayedCall(700, () => {
             this.tweens.add({
@@ -91,10 +102,21 @@ export class TitleScene extends Phaser.Scene {
                 repeat: -1,
                 ease: 'Sine.easeInOut'
             });
+
+            // Grow/shrink for second DRUNK text - different rate
+            this.tweens.add({
+                targets: drunk2,
+                scaleX: { from: 0.92, to: 1.08 },
+                scaleY: { from: 0.92, to: 1.08 },
+                duration: 2300, // Different duration for desync
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
         });
 
-        // Start button (always visible) - centered vertically
-        const startY = height / 2;
+        // Start button (always visible) - positioned below the title
+        const startY = height / 2 + 150;
         const startBg = this.add.rectangle(width / 2, startY, 500, 90, 0x228B22);
         startBg.setStrokeStyle(6, 0xFFFFFF);
 
