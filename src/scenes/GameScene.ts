@@ -245,25 +245,7 @@ export class GameScene extends Phaser.Scene {
         this.targetMarker.setDepth(99);
 
         // Click/tap to move (disabled in EDIT mode)
-        this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-            // Don't handle player movement in EDIT mode
-            // TEMPORARILY DISABLED FOR DEBUGGING
-            // if (this.editorUI && this.editorUI.getMode() === EditorMode.EDIT) {
-            //     return;
-            // }
-
-            // Convert screen coordinates to world coordinates
-            const worldX = pointer.worldX;
-            const worldY = pointer.worldY;
-
-            // Set target position
-            this.targetPosition = { x: worldX, y: worldY };
-
-            // Draw target marker
-            this.visualizationHelpers.drawTargetMarker(this.targetMarker, worldX, worldY);
-
-            console.log(`🎯 Moving to (${Math.round(worldX)}, ${Math.round(worldY)})`);
-        });
+        // NOTE: This handler is now REMOVED - grid clicks handled in handleGridClick method below
 
         // NPCs
         this.npcs = this.physics.add.group();
@@ -367,16 +349,16 @@ export class GameScene extends Phaser.Scene {
             this.MAP_ROWS
         );
 
-        // Initialize in-game editor (free mobile version)
-        // Start in EDIT mode - don't spawn NPCs or start simulation yet
-        // TEMPORARILY DISABLED FOR DEBUGGING
-        // this.editorUI = new EditorUI(this);
-        // this.editorUI.create();
+        // Launch EditorUI as separate overlay scene
+        this.scene.launch('EditorUIScene');
 
         // Pause physics initially - will unpause when player clicks START
-        // this.physics.pause();
+        this.physics.pause();
 
-        console.log('🛠️ In-game editor DISABLED for debugging');
+        // Enable grid editing
+        this.input.on('pointerdown', this.handleGridClick, this);
+
+        console.log('🛠️ In-game editor launched as separate scene');
     }
 
     update() {
@@ -389,11 +371,11 @@ export class GameScene extends Phaser.Scene {
         const socialTarget = this.player.getData('socialTarget');
 
         // Don't update player movement in EDIT mode
-        // TEMPORARILY DISABLED FOR DEBUGGING
-        // if (this.editorUI && this.editorUI.getMode() === EditorMode.EDIT) {
-        //     this.player.setVelocity(0);
-        //     return;
-        // }
+        const editorUI = this.scene.get('EditorUIScene') as any;
+        if (editorUI && editorUI.getMode && editorUI.getMode() === 'EDIT') {
+            this.player.setVelocity(0);
+            return;
+        }
 
         // Player movement
         const speed = 220;  // Increased from 160
@@ -719,6 +701,23 @@ export class GameScene extends Phaser.Scene {
     // ========== IN-GAME EDITOR METHODS (Free Mobile Version) ==========
     // See EDITOR_ARCHITECTURE.md for details on dual-editor system
 
+    private handleGridClick(pointer: Phaser.Input.Pointer): void {
+        const editorUI = this.scene.get('EditorUIScene') as any;
+        if (!editorUI || editorUI.getMode() !== 'EDIT') {
+            // In ACTIVE mode - handle player movement
+            const worldX = pointer.worldX;
+            const worldY = pointer.worldY;
+            this.targetPosition = { x: worldX, y: worldY };
+            this.visualizationHelpers.drawTargetMarker(this.targetMarker, worldX, worldY);
+            console.log(`🎯 Moving to (${Math.round(worldX)}, ${Math.round(worldY)})`);
+            return;
+        }
+
+        // In EDIT mode - place tiles
+        const selectedTile = editorUI.getSelectedTile();
+        this.placeTileAt(pointer.worldX, pointer.worldY, selectedTile);
+    }
+
     public placeTileAt(worldX: number, worldY: number, tileType: number, trackEdit: boolean = true): void {
         // Convert world coordinates to grid coordinates
         const col = Math.floor(worldX / this.TILE_SIZE);
@@ -736,8 +735,11 @@ export class GameScene extends Phaser.Scene {
         this.currentGrid[row][col] = tileType;
 
         // Track edit in history (if requested)
-        if (trackEdit && this.editorUI) {
-            this.editorUI.trackEdit(row, col, oldTile, tileType);
+        if (trackEdit) {
+            const editorUI = this.scene.get('EditorUIScene') as any;
+            if (editorUI && editorUI.trackEdit) {
+                editorUI.trackEdit(row, col, oldTile, tileType);
+            }
         }
 
         // Update visual representation
