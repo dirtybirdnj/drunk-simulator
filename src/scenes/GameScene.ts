@@ -154,16 +154,16 @@ export class GameScene extends Phaser.Scene {
         });
         instructions.setScrollFactor(0);
 
-        // Debug text
-        this.debugText = this.add.text(10, 50, '', {
-            fontSize: '12px',
-            color: '#00ff00',
-            backgroundColor: '#000',
-            padding: { x: 8, y: 5 },
-            fontFamily: 'monospace'
-        });
-        this.debugText.setScrollFactor(0);
-        this.debugText.setDepth(1000);
+        // Debug text - disabled for production
+        // this.debugText = this.add.text(10, 50, '', {
+        //     fontSize: '12px',
+        //     color: '#00ff00',
+        //     backgroundColor: '#000',
+        //     padding: { x: 8, y: 5 },
+        //     fontFamily: 'monospace'
+        // });
+        // this.debugText.setScrollFactor(0);
+        // this.debugText.setDepth(1000);
 
         // Graphics for bartender line and pouring bar
         this.bartenderLineGraphics = this.add.graphics();
@@ -592,10 +592,10 @@ const map: number[][] = [
             console.log(`🍻 Player finished beer #${drinksConsumed}! Drunk level: ${drunkLevel}%`);
         }
 
-        // Debug
-        const col = Math.floor(this.player.x / 32);
-        const row = Math.floor(this.player.y / 32);
-        this.debugText.setText(`Player: (${Math.round(this.player.x)}, ${Math.round(this.player.y)}) | Grid: (${col}, ${row}) | State: ${playerState} | Beer: ${Math.round(beerAmount)}%`);
+        // Debug - disabled for production
+        // const col = Math.floor(this.player.x / 32);
+        // const row = Math.floor(this.player.y / 32);
+        // this.debugText.setText(`Player: (${Math.round(this.player.x)}, ${Math.round(this.player.y)}) | Grid: (${col}, ${row}) | State: ${playerState} | Beer: ${Math.round(beerAmount)}%`);
 
         // NPC AI
         this.updateNPCAI();
