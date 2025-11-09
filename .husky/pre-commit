@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Run TypeScript compiler to check for errors before committing
+npm run build
