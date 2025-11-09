@@ -5,13 +5,13 @@ let mainWindow;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 443,
-    height: 923,
+    width: 1400,
+    height: 1000,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
     },
-    // Phone-like dimensions for desktop
+    // Large enough to show phone mockup + map editor
     resizable: true,
     backgroundColor: '#000000'
   });
