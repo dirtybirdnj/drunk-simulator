@@ -33,6 +33,14 @@ export class TitleScene extends Phaser.Scene {
         beer2.setOrigin(0.5);
         beer2.setAlpha(0.6);
 
+        // Third beer emoji - opposite direction with vertical drift
+        const beer3 = this.add.text(width / 2, 372, '🍺', {
+            fontSize: '400px',
+            align: 'center'
+        });
+        beer3.setOrigin(0.5);
+        beer3.setAlpha(0.7);
+
         // First "DRUNK" text - wobbles and fades (moved down 1 inch = ~96px)
         const drunk1 = this.add.text(width / 2, 276, 'DRUNK', {
             fontSize: '200px',
@@ -65,8 +73,8 @@ export class TitleScene extends Phaser.Scene {
         });
         simulator.setOrigin(0.5);
 
-        // Description text
-        const description = this.add.text(width / 2, 588, 'A simulation game to experiment\nwith crowd dynamics by making a bar', {
+        // Description text (moved down 1 inch = ~96px)
+        const description = this.add.text(width / 2, 684, 'A simulation game to experiment\nwith crowd dynamics by making a bar', {
             fontSize: '28px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
@@ -213,6 +221,51 @@ export class TitleScene extends Phaser.Scene {
                 yoyo: true,
                 repeat: -1,
                 ease: 'Sine.easeInOut'
+            });
+
+            // Third beer - opposite horizontal drift with vertical movement (delayed 1200ms)
+            this.time.delayedCall(1200, () => {
+                // Opposite horizontal drift (right to left)
+                this.tweens.add({
+                    targets: beer3,
+                    angle: { from: -5, to: 5 },
+                    x: { from: width / 2 + 90, to: width / 2 - 90 },
+                    duration: 2400,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
+
+                // Vertical drift (up and down)
+                this.tweens.add({
+                    targets: beer3,
+                    y: { from: 372 - 40, to: 372 + 40 },
+                    duration: 1900,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
+
+                // Fade for third beer
+                this.tweens.add({
+                    targets: beer3,
+                    alpha: { from: 0.5, to: 0.95 },
+                    duration: 2200,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
+
+                // Grow/shrink for third beer
+                this.tweens.add({
+                    targets: beer3,
+                    scaleX: { from: 0.9, to: 1.1 },
+                    scaleY: { from: 0.9, to: 1.1 },
+                    duration: 2500,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
             });
         });
 
