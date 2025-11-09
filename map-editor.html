@@ -303,8 +303,9 @@
                 <div id="saved-maps-list" style="max-height: 150px; overflow-y: auto; font-size: 11px;"></div>
             </div>
 
-            <button onclick="importFromCode()">📥 Import from Code</button>
+            <button class="cta-button" onclick="loadMapIntoGame()" style="background: #10b981; font-size: 18px; padding: 15px;">▶️ LOAD MAP</button>
             <button class="cta-button" onclick="showQROverlay()">📱 Show QR Code</button>
+            <button onclick="importFromCode()">📥 Import from Code</button>
 
             <div class="zoom-controls">
                 <button onclick="zoomIn()">Zoom +</button>
@@ -1171,6 +1172,32 @@
                 window.parent.hideEditor();
             } else {
                 document.getElementById('status').textContent = '⚠️ Not running in game view - open from main game';
+            }
+        }
+
+        /**
+         * Load current map into game and start playing
+         */
+        function loadMapIntoGame() {
+            try {
+                // Compress current map
+                const compressed = compressMap(grid);
+
+                // Store in localStorage for game to load
+                localStorage.setItem('scannedMap', compressed);
+
+                // Update status
+                document.getElementById('status').textContent = `✅ Map loaded! Starting game with ${COLS}×${ROWS} map...`;
+
+                // Tell parent to start game
+                if (window.parent && window.parent.startGameWithMap) {
+                    window.parent.startGameWithMap(compressed);
+                } else {
+                    document.getElementById('status').textContent = '⚠️ Not running in game view - open from main game';
+                }
+            } catch (error) {
+                console.error('Failed to load map:', error);
+                document.getElementById('status').textContent = `❌ Failed to load map: ${error.message}`;
             }
         }
     </script>

@@ -153,6 +153,28 @@
             document.getElementById('game-container').style.display = 'flex';
             document.getElementById('phone-wrapper').style.display = 'flex';
         };
+
+        // Start game with map from editor
+        window.startGameWithMap = function(mapData) {
+            // Hide editor, show game
+            window.hideEditor();
+
+            // Store map data
+            localStorage.setItem('scannedMap', mapData);
+
+            // Get the Phaser game instance and restart the scene
+            // The game will be available after main.ts loads
+            setTimeout(() => {
+                const game = window.phaserGame;
+                if (game && game.scene) {
+                    // Stop title scene and start game scene with map
+                    game.scene.stop('TitleScene');
+                    game.scene.start('GameScene', { scannedMapData: mapData });
+                } else {
+                    console.error('Game not ready yet');
+                }
+            }, 100);
+        };
     </script>
 
     <script type="module" src="/src/main.ts"></script>

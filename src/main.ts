@@ -22,4 +22,7 @@ const config: Phaser.Types.Core.GameConfig = {
     scene: [TitleScene, GameScene]
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+
+// Expose game instance globally for map loading from editor
+(window as any).phaserGame = game;
