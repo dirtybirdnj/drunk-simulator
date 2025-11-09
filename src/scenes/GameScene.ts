@@ -6,6 +6,7 @@ import { NPCSpawner } from '../systems/NPCSpawner';
 import { NPCAIController } from '../systems/NPCAIController';
 import { VisualizationHelpers } from '../systems/VisualizationHelpers';
 import { LevelSize, LEVEL_CONFIGS, GameState } from '../types/GameState';
+import { EditorUI, EditorMode } from '../systems/EditorUI';
 
 export class GameScene extends Phaser.Scene {
     private player!: Phaser.Physics.Arcade.Sprite;
@@ -51,6 +52,7 @@ export class GameScene extends Phaser.Scene {
     private patronSpawnTimer!: Phaser.Time.TimerEvent;
 
     private selectedMapData: number[][] | null = null;
+    private currentGrid: number[][] = []; // Mutable grid for editor
 
     // System controllers
     private mapBuilder!: MapBuilder;
@@ -58,6 +60,10 @@ export class GameScene extends Phaser.Scene {
     private npcAIController!: NPCAIController;
     private visualizationHelpers!: VisualizationHelpers;
     private employeeSpawns: Array<{x: number, y: number}> = [];
+
+    // In-game editor (free mobile version)
+    private editorUI!: EditorUI;
+    private gridTiles: Map<string, Phaser.GameObjects.Rectangle> = new Map(); // For visual updates
     private patronSpawns: Array<{x: number, y: number}> = [];
 
     constructor() {
@@ -362,6 +368,13 @@ export class GameScene extends Phaser.Scene {
             callbackScope: this,
             loop: true
         });
+
+        // Initialize in-game editor (free mobile version)
+        this.loadSavedLayout();
+        this.editorUI = new EditorUI(this);
+        this.editorUI.create();
+
+        console.log('🛠️ In-game editor initialized');
     }
 
     update() {
@@ -691,6 +704,117 @@ export class GameScene extends Phaser.Scene {
                 this.registry.set('selectedLevel', nextLevel);
                 this.scene.start('BootMenuScene');
             });
+        }
+    }
+
+    // ========== IN-GAME EDITOR METHODS (Free Mobile Version) ==========
+    // See EDITOR_ARCHITECTURE.md for details on dual-editor system
+
+    public placeTileAt(worldX: number, worldY: number, tileType: number): void {
+        // Convert world coordinates to grid coordinates
+        const col = Math.floor(worldX / this.TILE_SIZE);
+        const row = Math.floor(worldY / this.TILE_SIZE);
+
+        // Check bounds
+        if (row < 0 || row >= this.currentGrid.length || col < 0 || col >= this.currentGrid[0].length) {
+            return;
+        }
+
+        // Update grid data
+        this.currentGrid[row][col] = tileType;
+
+        // Update visual representation
+        this.updateTileVisual(row, col, tileType);
+
+        // Auto-save to localStorage
+        this.saveCurrentLayout();
+    }
+
+    private updateTileVisual(row: number, col: number, tileType: number): void {
+        const key = `${row},${col}`;
+        const existing = this.gridTiles.get(key);
+
+        if (existing) {
+            // Update color
+            const { COLORS } = require('../systems/TileTypes');
+            existing.setFillStyle(COLORS[tileType] || 0xFF00FF);
+        }
+    }
+
+    public startGame(): void {
+        // Called when player clicks "START" in EDIT mode
+        // This transitions from EDIT → ACTIVE mode
+        console.log('🎮 Starting game simulation...');
+
+        // Save the layout one final time
+        this.saveCurrentLayout();
+
+        // The editorUI will handle UI changes
+        // Game simulation is already running via update() loop
+    }
+
+    public restartLevel(): void {
+        // Called when player clicks "Restart" in ACTIVE mode
+        // This clears simulation and returns to EDIT mode
+        console.log('🔄 Restarting level...');
+
+        // Reset game state
+        this.gameState.cashEarned = 0;
+        this.gameState.levelComplete = false;
+        this.beersPoured = 0;
+        this.gameStartTime = Date.now();
+
+        // Clear all NPCs
+        this.npcs.clear(true, true);
+        this.moneyParticles = [];
+        this.smokeParticles = [];
+
+        // Stop patron spawning
+        if (this.patronSpawnTimer) {
+            this.patronSpawnTimer.remove();
+        }
+
+        // Update UI
+        const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];
+        this.cashText.setText(`$${this.gameState.cashEarned} / $${levelConfig.cashThreshold}`);
+    }
+
+    private saveCurrentLayout(): void {
+        // Save current grid to localStorage for persistence
+        const layoutData = {
+            grid: this.currentGrid,
+            level: this.gameState.currentLevel,
+            timestamp: Date.now()
+        };
+
+        localStorage.setItem('drunkSimCurrentLayout', JSON.stringify(layoutData));
+    }
+
+    private loadSavedLayout(): void {
+        // Try to load previously saved layout
+        const saved = localStorage.getItem('drunkSimCurrentLayout');
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                if (data.level === this.gameState.currentLevel && data.grid) {
+                    this.currentGrid = data.grid;
+                    console.log('📂 Loaded saved layout from localStorage');
+                    return;
+                }
+            } catch (error) {
+                console.error('Failed to load saved layout:', error);
+            }
+        }
+
+        // No saved layout, use starter layout or create empty grid
+        if (this.selectedMapData) {
+            this.currentGrid = JSON.parse(JSON.stringify(this.selectedMapData)); // Deep copy
+        } else {
+            // Create empty grid based on level size
+            const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];
+            this.currentGrid = Array(levelConfig.worldHeight).fill(0).map(() =>
+                Array(levelConfig.worldWidth).fill(0)
+            );
         }
     }
 }
