@@ -57,9 +57,12 @@
             height: 32px;
             border: 1px solid rgba(255,255,255,0.1);
             cursor: pointer;
+            /* Performance optimizations */
+            contain: layout style paint;
+            will-change: border-color;
         }
         .cell:hover {
-            border: 1px solid #fff;
+            border-color: #fff;
         }
         .palette {
             margin: 20px 0;
@@ -475,11 +478,18 @@
             }
         });
 
-        // Palette selection
-        document.querySelectorAll('.palette-tile').forEach(tile => {
+        // Palette selection - cache tiles and track selected tile
+        const paletteTiles = document.querySelectorAll('.palette-tile');
+        let currentSelectedTile = document.querySelector('.palette-tile.selected');
+
+        paletteTiles.forEach(tile => {
             tile.addEventListener('click', () => {
-                document.querySelectorAll('.palette-tile').forEach(t => t.classList.remove('selected'));
+                // Only remove from previously selected tile (not all tiles!)
+                if (currentSelectedTile) {
+                    currentSelectedTile.classList.remove('selected');
+                }
                 tile.classList.add('selected');
+                currentSelectedTile = tile;
                 selectedType = parseInt(tile.dataset.type);
             });
         });
