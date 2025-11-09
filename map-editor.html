@@ -706,9 +706,27 @@
 
             if (mapData) {
                 saveHistory(); // Save current state to undo
+
+                // Get loaded map dimensions
+                const loadedHeight = mapData.grid.length;
+                const loadedWidth = mapData.grid[0]?.length || 0;
+
+                // Update global dimensions
+                ROWS = loadedHeight;
+                COLS = loadedWidth;
+
+                // Update input fields
+                document.getElementById('map-width').value = loadedWidth;
+                document.getElementById('map-height').value = loadedHeight;
+
+                // Update size info
+                updateSizeInfo();
+
+                // Load the grid
                 grid = mapData.grid;
                 renderGrid();
-                document.getElementById('status').textContent = `✅ Loaded map "${mapName}"`;
+
+                document.getElementById('status').textContent = `✅ Loaded map "${mapName}" (${loadedWidth}×${loadedHeight})`;
             } else {
                 document.getElementById('status').textContent = `❌ Map "${mapName}" not found`;
             }
