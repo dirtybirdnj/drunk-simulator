@@ -125,9 +125,9 @@
     </div>
     <div id="game-container"></div>
 
-    <!-- Map Editor Container (iframe) -->
+    <!-- Map Editor Container (iframe) - lazy loaded -->
     <div id="editor-container">
-        <iframe id="editor-frame" src="map-editor.html"></iframe>
+        <!-- iframe will be created dynamically when needed -->
     </div>
 
     <!-- Camera Scanner Overlay -->
@@ -141,9 +141,27 @@
     </div>
 
     <script>
+        // Track if editor has been loaded
+        let editorLoaded = false;
+
         // Global functions to toggle between game and editor
         window.showEditor = function() {
-            document.getElementById('editor-container').style.display = 'block';
+            const container = document.getElementById('editor-container');
+
+            // Lazy-load the editor iframe only when first opened
+            if (!editorLoaded) {
+                console.log('📝 Loading map editor for the first time...');
+                const iframe = document.createElement('iframe');
+                iframe.id = 'editor-frame';
+                iframe.src = 'map-editor.html';
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                container.appendChild(iframe);
+                editorLoaded = true;
+            }
+
+            container.style.display = 'block';
             document.getElementById('game-container').style.display = 'none';
             document.getElementById('phone-wrapper').style.display = 'none';
         };
