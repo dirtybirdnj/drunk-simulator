@@ -1211,36 +1211,19 @@
             }
         });
 
-        // Handle mouseover with requestAnimationFrame throttling
-        let rafPending = false;
-        let pendingCell = null;
-        let pendingRow = null;
-        let pendingCol = null;
-
+        // Handle mouseover - simple and fast
         gridEl.addEventListener('mouseover', (e) => {
             const cell = e.target.closest('.cell');
             if (!cell || cell === lastHoveredCell) return;
 
-            // Store the pending update
-            pendingCell = cell;
-            pendingRow = parseInt(cell.dataset.row);
-            pendingCol = parseInt(cell.dataset.col);
+            lastHoveredCell = cell;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
 
-            // Schedule update on next animation frame (throttles to 60fps max)
-            if (!rafPending) {
-                rafPending = true;
-                requestAnimationFrame(() => {
-                    rafPending = false;
-                    if (pendingCell === lastHoveredCell) return;
-
-                    lastHoveredCell = pendingCell;
-
-                    if (fillMode) {
-                        updateFillPreview(pendingRow, pendingCol);
-                    } else if (isMouseDown) {
-                        paintCell(pendingRow, pendingCol);
-                    }
-                });
+            if (fillMode) {
+                updateFillPreview(row, col);
+            } else if (isMouseDown) {
+                paintCell(row, col);
             }
         });
 

@@ -64,7 +64,18 @@ export class GameScene extends Phaser.Scene {
         super({ key: 'GameScene' });
     }
 
-    init(data: { selectedMap?: string | null; scannedMapData?: string; level?: LevelSize }) {
+    init(data: { selectedMap?: string | null; scannedMapData?: string; level?: LevelSize; selectedLevel?: LevelSize }) {
+        // Initialize game state for level system first
+        const selectedLevel = data.level || data.selectedLevel || LevelSize.MINI;
+        this.gameState = {
+            currentLevel: selectedLevel,
+            cashEarned: 0,
+            levelComplete: false
+        };
+        this.gameStartTime = Date.now();
+        this.beersPoured = 0;
+        console.log(`🎮 Starting ${LEVEL_CONFIGS[selectedLevel].name} - Goal: $${LEVEL_CONFIGS[selectedLevel].cashThreshold}`);
+
         // Priority 1: Check for scannedMapData (from QR code or editor)
         if (data.scannedMapData) {
             try {
@@ -86,25 +97,32 @@ export class GameScene extends Phaser.Scene {
             if (mapData && mapData.grid) {
                 this.selectedMapData = mapData.grid;
                 console.log(`📍 Loaded map: ${data.selectedMap}`);
+                return;
             } else {
-                console.warn(`⚠️ Map "${data.selectedMap}" not found, using default`);
-                this.selectedMapData = null;
+                console.warn(`⚠️ Map "${data.selectedMap}" not found, using starter layout`);
             }
+        }
+
+        // Priority 3: Load starter layout for selected level
+        const levelConfig = LEVEL_CONFIGS[selectedLevel];
+        if (levelConfig.starterLayout) {
+            // Convert starter layout string to grid array
+            const layout = levelConfig.starterLayout;
+            const grid: number[][] = [];
+            for (let row = 0; row < levelConfig.worldHeight; row++) {
+                const rowData: number[] = [];
+                for (let col = 0; col < levelConfig.worldWidth; col++) {
+                    const index = row * levelConfig.worldWidth + col;
+                    rowData.push(parseInt(layout[index] || '0'));
+                }
+                grid.push(rowData);
+            }
+            this.selectedMapData = grid;
+            console.log(`📍 Loaded starter layout for ${levelConfig.name}: ${levelConfig.worldWidth}×${levelConfig.worldHeight}`);
         } else {
             console.log('📍 Using default map');
             this.selectedMapData = null;
         }
-
-        // Initialize game state for level system
-        const selectedLevel = data.level || LevelSize.MINI;
-        this.gameState = {
-            currentLevel: selectedLevel,
-            cashEarned: 0,
-            levelComplete: false
-        };
-        this.gameStartTime = Date.now();
-        this.beersPoured = 0;
-        console.log(`🎮 Starting ${LEVEL_CONFIGS[selectedLevel].name} - Goal: $${LEVEL_CONFIGS[selectedLevel].cashThreshold}`);
     }
 
     preload() {
@@ -527,16 +545,37 @@ export class GameScene extends Phaser.Scene {
     private showLevelComplete(): void {
         console.log('🎉 Level Complete!');
 
+        // Pause the game
+        this.physics.pause();
+
+        // Stop spawning new patrons
+        if (this.patronSpawnTimer) {
+            this.patronSpawnTimer.remove();
+        }
+
+        // Create dark overlay
+        const overlay = this.add.rectangle(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            this.cameras.main.width,
+            this.cameras.main.height,
+            0x000000,
+            0.8
+        );
+        overlay.setScrollFactor(0);
+        overlay.setDepth(1999);
+
         // Show victory message
         const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];
         const victoryText = this.add.text(
             this.cameras.main.centerX,
-            this.cameras.main.centerY - 100,
-            `${levelConfig.name} Complete!`,
+            this.cameras.main.centerY - 200,
+            `🎉 ${levelConfig.name} Complete! 🎉`,
             {
-                fontSize: '48px',
+                fontSize: '40px',
                 color: '#FFD700',
-                backgroundColor: '#000',
+                stroke: '#000',
+                strokeThickness: 4,
                 padding: { x: 20, y: 10 }
             }
         );
@@ -546,12 +585,11 @@ export class GameScene extends Phaser.Scene {
 
         const goalText = this.add.text(
             this.cameras.main.centerX,
-            this.cameras.main.centerY,
-            `Goal Reached: $${this.gameState.cashEarned}`,
+            this.cameras.main.centerY - 140,
+            `Goal Reached: $${this.gameState.cashEarned} / $${levelConfig.cashThreshold}`,
             {
-                fontSize: '32px',
+                fontSize: '24px',
                 color: '#00ff00',
-                backgroundColor: '#000',
                 padding: { x: 15, y: 8 }
             }
         );
@@ -559,33 +597,79 @@ export class GameScene extends Phaser.Scene {
         goalText.setScrollFactor(0);
         goalText.setDepth(2000);
 
-        const continueText = this.add.text(
+        // "Keep Design & Restart" button
+        const keepButton = this.add.text(
             this.cameras.main.centerX,
-            this.cameras.main.centerY + 80,
-            'Press SPACE to continue playing',
+            this.cameras.main.centerY - 40,
+            '🔄 Keep Design & Restart',
             {
-                fontSize: '24px',
+                fontSize: '28px',
                 color: '#fff',
-                backgroundColor: '#000',
-                padding: { x: 12, y: 6 }
+                backgroundColor: '#10b981',
+                padding: { x: 30, y: 15 }
             }
         );
-        continueText.setOrigin(0.5);
-        continueText.setScrollFactor(0);
-        continueText.setDepth(2000);
-
-        // Flash the text
-        this.tweens.add({
-            targets: [victoryText, goalText, continueText],
-            alpha: 0.3,
-            duration: 500,
-            yoyo: true,
-            repeat: -1
+        keepButton.setOrigin(0.5);
+        keepButton.setScrollFactor(0);
+        keepButton.setDepth(2000);
+        keepButton.setInteractive({ useHandCursor: true });
+        keepButton.on('pointerover', () => keepButton.setScale(1.1));
+        keepButton.on('pointerout', () => keepButton.setScale(1));
+        keepButton.on('pointerdown', () => {
+            // Restart with current layout
+            this.scene.restart();
         });
 
-        // Stop spawning new patrons
-        if (this.patronSpawnTimer) {
-            this.patronSpawnTimer.remove();
+        // "New Design" button
+        const newButton = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY + 40,
+            '✏️ New Design',
+            {
+                fontSize: '28px',
+                color: '#fff',
+                backgroundColor: '#3b82f6',
+                padding: { x: 30, y: 15 }
+            }
+        );
+        newButton.setOrigin(0.5);
+        newButton.setScrollFactor(0);
+        newButton.setDepth(2000);
+        newButton.setInteractive({ useHandCursor: true });
+        newButton.on('pointerover', () => newButton.setScale(1.1));
+        newButton.on('pointerout', () => newButton.setScale(1));
+        newButton.on('pointerdown', () => {
+            // Go back to boot menu
+            this.scene.start('BootMenuScene');
+        });
+
+        // "Next Level" button (if not on last level)
+        const levels = [LevelSize.MINI, LevelSize.SMALL, LevelSize.MEDIUM];
+        const currentIndex = levels.indexOf(this.gameState.currentLevel);
+        if (currentIndex < levels.length - 1) {
+            const nextButton = this.add.text(
+                this.cameras.main.centerX,
+                this.cameras.main.centerY + 120,
+                '⬆️ Next Level',
+                {
+                    fontSize: '28px',
+                    color: '#fff',
+                    backgroundColor: '#f59e0b',
+                    padding: { x: 30, y: 15 }
+                }
+            );
+            nextButton.setOrigin(0.5);
+            nextButton.setScrollFactor(0);
+            nextButton.setDepth(2000);
+            nextButton.setInteractive({ useHandCursor: true });
+            nextButton.on('pointerover', () => nextButton.setScale(1.1));
+            nextButton.on('pointerout', () => nextButton.setScale(1));
+            nextButton.on('pointerdown', () => {
+                // Store next level and restart scene with it
+                const nextLevel = levels[currentIndex + 1];
+                this.registry.set('selectedLevel', nextLevel);
+                this.scene.start('BootMenuScene');
+            });
         }
     }
 }

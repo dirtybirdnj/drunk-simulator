@@ -165,7 +165,9 @@ Open the editor from the main menu (desktop only) or run `map-editor.html` direc
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit pull requests.
+This is a paid game, but It's also a tool to teach people to get curious and start digging into code.  If you found this repo, I want to reward you with the ability to edit the code yourself.
+
+I can't pay you for your help, but contributions are welcome. Please feel free to submit a PR if you have an idea for a new feature.
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b my-feature`
@@ -221,4 +223,4 @@ If you build upon this project, please provide attribution to the original autho
 
 Created by Mat Gilbert
 
-Built with Phaser 3, TypeScript, and Vite.
+Built with Phaser 3, TypeScript, and Vite. Claude helped too.
