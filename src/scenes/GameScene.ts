@@ -242,8 +242,13 @@ export class GameScene extends Phaser.Scene {
         this.targetMarker = this.add.graphics();
         this.targetMarker.setDepth(99);
 
-        // Click/tap to move
+        // Click/tap to move (disabled in EDIT mode)
         this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            // Don't handle player movement in EDIT mode
+            if (this.editorUI && this.editorUI.getMode() === EditorMode.EDIT) {
+                return;
+            }
+
             // Convert screen coordinates to world coordinates
             const worldX = pointer.worldX;
             const worldY = pointer.worldY;
@@ -378,6 +383,12 @@ export class GameScene extends Phaser.Scene {
 
         const playerState = this.player.getData('state');
         const socialTarget = this.player.getData('socialTarget');
+
+        // Don't update player movement in EDIT mode
+        if (this.editorUI && this.editorUI.getMode() === EditorMode.EDIT) {
+            this.player.setVelocity(0);
+            return;
+        }
 
         // Player movement
         const speed = 220;  // Increased from 160
