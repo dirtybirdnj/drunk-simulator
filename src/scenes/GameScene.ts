@@ -20,6 +20,8 @@ export class GameScene extends Phaser.Scene {
     private bartenderLineGraphics!: Phaser.GameObjects.Graphics;
     private pouringBarGraphics!: Phaser.GameObjects.Graphics;
     private conversationGraphics!: Phaser.GameObjects.Graphics;
+    private serviceZoneGraphics!: Phaser.GameObjects.Graphics;
+    private visionConeGraphics!: Phaser.GameObjects.Graphics;
 
     // Map dimensions
     private readonly MAP_COLS = 32;
@@ -175,6 +177,15 @@ export class GameScene extends Phaser.Scene {
         // Graphics for patron conversations
         this.conversationGraphics = this.add.graphics();
         this.conversationGraphics.setDepth(500);
+
+        // Graphics for service zone overlays (light blue)
+        this.serviceZoneGraphics = this.add.graphics();
+        this.serviceZoneGraphics.setDepth(5);  // Above floor, below NPCs
+        this.drawServiceZones();
+
+        // Graphics for bartender vision cones
+        this.visionConeGraphics = this.add.graphics();
+        this.visionConeGraphics.setDepth(10);  // Above zones, below NPCs
 
         // Spawn initial patrons immediately
         for (let i = 0; i < 3; i++) {
@@ -957,24 +968,20 @@ const map: number[][] = [
             const bartenderState = bartender.getData('state');
 
             if (bartenderState === 'idle') {
-                // Get this bartender's bar index (which tap they work at)
-                const bartenderBarIndex = bartender.getData('barIndex');
-
-                // Find closest waiting customer in THIS bartender's service zones only
+                // Find closest waiting customer in bartender's vision cone
                 const allWaitingCustomers: any[] = [];
-                let totalWaiting = 0;
 
-                // Check player
+                // Check player in vision cone
                 if (this.player.getData('state') === 'waiting') {
-                    totalWaiting++;
-                    // Check if player is in a service zone that belongs to THIS bartender
+                    const inVisionCone = this.isPointInVisionCone(this.player.x, this.player.y, bartender);
+
+                    // Also check if player is in a service zone (light blue tiles)
                     const inServiceZone = this.barServiceZones.some(zone =>
-                        zone.tapIndex === bartenderBarIndex &&
                         this.player.x >= zone.x && this.player.x < zone.x + zone.width &&
                         this.player.y >= zone.y && this.player.y < zone.y + zone.height
                     );
 
-                    if (inServiceZone) {
+                    if (inVisionCone && inServiceZone) {
                         const dx = this.player.x - bartender.x;
                         const dy = this.player.y - bartender.y;
                         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -987,25 +994,25 @@ const map: number[][] = [
 
                         if (!alreadyBeingServed) {
                             allWaitingCustomers.push({ entity: this.player, dist });
-                            console.log(`✓ Bartender ${bartenderBarIndex}: Player in my service zone @ (${Math.round(this.player.x)},${Math.round(this.player.y)})`);
+                            console.log(`👁️ Bartender sees Player in vision cone @ (${Math.round(this.player.x)},${Math.round(this.player.y)})`);
                         }
                     }
                 }
 
-                // Check patrons in THIS bartender's service zones
+                // Check patrons in bartender's vision cone
                 this.npcs.children.entries.forEach((npc: any) => {
                     if (npc.getData('type') !== 'patron') return;
                     if (npc.getData('state') !== 'waiting') return;
 
-                    totalWaiting++;
-                    // Check if patron is in a service zone that belongs to THIS bartender
+                    const inVisionCone = this.isPointInVisionCone(npc.x, npc.y, bartender);
+
+                    // Also check if patron is in a service zone (light blue tiles)
                     const inServiceZone = this.barServiceZones.some(zone =>
-                        zone.tapIndex === bartenderBarIndex &&
                         npc.x >= zone.x && npc.x < zone.x + zone.width &&
                         npc.y >= zone.y && npc.y < zone.y + zone.height
                     );
 
-                    if (inServiceZone) {
+                    if (inVisionCone && inServiceZone) {
                         const dx = npc.x - bartender.x;
                         const dy = npc.y - bartender.y;
                         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -1022,11 +1029,7 @@ const map: number[][] = [
                     }
                 });
 
-                if (totalWaiting > 0) {
-                    console.log(`🔍 Bartender found ${totalWaiting} total waiting, ${allWaitingCustomers.length} in service zones`);
-                }
-
-                // Serve closest customer in service zone
+                // Serve closest customer in vision cone
                 if (allWaitingCustomers.length > 0) {
                     allWaitingCustomers.sort((a, b) => a.dist - b.dist);
                     const closestCustomer = allWaitingCustomers[0].entity;
@@ -1064,6 +1067,8 @@ const map: number[][] = [
                         (dx / dist) * npcSpeed,
                         (dy / dist) * npcSpeed
                     );
+                    // Update facing angle while moving
+                    bartender.setData('facingAngle', Math.atan2(dy, dx));
                 } else {
                     // Close enough to tap
                     bartender.setVelocity(0, 0);
@@ -1084,6 +1089,9 @@ const map: number[][] = [
                     const dx = target.x - bartender.x;
                     const dy = target.y - bartender.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    // Update facing angle to look at target
+                    bartender.setData('facingAngle', Math.atan2(dy, dx));
 
                     // Bartenders can serve patrons up to 2 tiles away (64px)
                     if (dist <= 64) {
@@ -1124,11 +1132,31 @@ const map: number[][] = [
         // Visual feedback for bartenders
         this.bartenderLineGraphics.clear();
         this.pouringBarGraphics.clear();
+        this.visionConeGraphics.clear();
 
         this.npcs.children.entries.forEach((bartender: any) => {
             if (bartender.getData('type') !== 'staff') return;
 
             const bartenderState = bartender.getData('state');
+            const facingAngle = bartender.getData('facingAngle');
+
+            // Draw vision cone for bartenders
+            const coneRange = 64;  // 2 tiles (bar counter + floor tile)
+            const coneAngle = Math.PI / 3;  // 60 degrees
+
+            this.visionConeGraphics.fillStyle(0xFFFF00, 0.15);  // Yellow, 15% opacity
+            this.visionConeGraphics.beginPath();
+            this.visionConeGraphics.moveTo(bartender.x, bartender.y);
+            this.visionConeGraphics.arc(
+                bartender.x,
+                bartender.y,
+                coneRange,
+                facingAngle - coneAngle / 2,
+                facingAngle + coneAngle / 2,
+                false
+            );
+            this.visionConeGraphics.closePath();
+            this.visionConeGraphics.fillPath();
 
             if (bartenderState === 'pouring' || bartenderState === 'serving') {
                 const target = bartender.getData('target');
@@ -1317,5 +1345,50 @@ const map: number[][] = [
 
         this.targetMarker.lineStyle(2, 0x00ff00, 0.5);
         this.targetMarker.strokeCircle(x, y, 24);
+    }
+
+    private drawServiceZones() {
+        this.serviceZoneGraphics.clear();
+
+        // Draw light blue overlay on all service zone tiles
+        this.barServiceZones.forEach(zone => {
+            this.serviceZoneGraphics.fillStyle(0x87CEEB, 0.3);  // Light blue, 30% opacity
+            this.serviceZoneGraphics.fillRect(zone.x, zone.y, zone.width, zone.height);
+        });
+    }
+
+    private isPointInVisionCone(
+        pointX: number,
+        pointY: number,
+        bartender: any
+    ): boolean {
+        const facingAngle = bartender.getData('facingAngle');
+        const bartenderX = bartender.x;
+        const bartenderY = bartender.y;
+
+        // Vision cone parameters - bartender can only see 2 tiles away (bar counter + floor)
+        const coneRange = 64;  // 2 tiles = 64 pixels
+        const coneAngle = Math.PI / 3;  // 60 degrees cone width
+
+        // Vector from bartender to point
+        const dx = pointX - bartenderX;
+        const dy = pointY - bartenderY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Check if point is within range
+        if (distance > coneRange) return false;
+
+        // Calculate angle to point
+        const angleToPoint = Math.atan2(dy, dx);
+
+        // Calculate angle difference
+        let angleDiff = angleToPoint - facingAngle;
+
+        // Normalize angle difference to [-PI, PI]
+        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+
+        // Check if point is within cone angle
+        return Math.abs(angleDiff) <= coneAngle / 2;
     }
 }
