@@ -219,6 +219,10 @@ If you build upon this project, please provide attribution to the original autho
 - **Report bugs**: [GitHub Issues](https://github.com/dirtybirdnj/drunk-simulator/issues)
 - **Source code**: [GitHub](https://github.com/dirtybirdnj/drunk-simulator)
 
+## Resources
+
+- **Emoji/ASCII Dictionary**: https://gist.github.com/dkdndes/a224555858f185f1662e3384c6a410d9
+
 ## Credits
 
 Created by Mat Gilbert
