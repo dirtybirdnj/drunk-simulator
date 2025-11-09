@@ -1,10 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Drunk Simulator - Map Editor</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body {
             font-family: monospace;
@@ -21,14 +18,10 @@
             background: #000;
             position: relative;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            justify-content: flex-start;
+            align-items: flex-start;
             max-height: 100%;
             padding: 20px;
-            cursor: grab;
-        }
-        #grid-container:active {
-            cursor: grabbing;
         }
         #grid {
             display: inline-block;
@@ -233,59 +226,6 @@
                 <div class="palette-tile" data-type="15" style="background: #228B22;"></div>
                 <span style="font-size: 9px;">Cash Reg</span>
             </div>
-
-            <!-- Map Size Controls -->
-            <div style="grid-column: 1 / -1; margin-top: 20px; padding: 10px; background: #333; border-radius: 3px;">
-                <div id="map-size-label" style="font-size: 12px; margin-bottom: 8px; font-weight: bold; text-align: center;">Map Size (1,400 tiles)</div>
-
-                <div style="margin-bottom: 8px;">
-                    <label style="font-size: 10px; display: block; margin-bottom: 3px;">Width (cols)</label>
-                    <input type="number" id="map-width" min="10" max="60" value="40"
-                           style="width: 100%; padding: 5px; background: #444; border: 1px solid #666; color: #fff; border-radius: 3px;">
-                </div>
-
-                <div style="margin-bottom: 8px;">
-                    <label style="font-size: 10px; display: block; margin-bottom: 3px;">Height (rows)</label>
-                    <input type="number" id="map-height" min="10" max="100" value="35"
-                           style="width: 100%; padding: 5px; background: #444; border: 1px solid #666; color: #fff; border-radius: 3px;">
-                </div>
-
-                <button onclick="resizeMap()" style="width: 100%; padding: 8px; margin-bottom: 8px; background: #2563eb; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; font-weight: bold;">
-                    Apply
-                </button>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-bottom: 8px;">
-                    <button onclick="setPresetSize(10, 18)" style="padding: 5px; background: #444; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-size: 8px;">
-                        Tiny<br>10×18
-                    </button>
-                    <button onclick="setPresetSize(15, 27)" style="padding: 5px; background: #444; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-size: 8px;">
-                        Mini<br>15×27
-                    </button>
-                    <button onclick="setPresetSize(20, 36)" style="padding: 5px; background: #444; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-size: 8px;">
-                        Small<br>20×36
-                    </button>
-                    <button onclick="setPresetSize(25, 44)" style="padding: 5px; background: #444; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-size: 8px;">
-                        Medium<br>25×44
-                    </button>
-                    <button onclick="setPresetSize(30, 53)" style="padding: 5px; background: #444; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-size: 8px;">
-                        Large<br>30×53
-                    </button>
-                    <button onclick="setPresetSize(40, 70)" style="padding: 5px; background: #444; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-size: 8px;">
-                        XL<br>40×70
-                    </button>
-                </div>
-
-                <div id="size-info" style="font-size: 9px; color: #aaa; margin-bottom: 8px; text-align: center;">
-                    QR v25 • 936 chars
-                </div>
-
-                <button id="fill-btn" onclick="startFillMode()" style="width: 100%; padding: 6px; margin-bottom: 3px; background: #444; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">
-                    Fill Rectangle
-                </button>
-                <button onclick="clearGrid()" style="width: 100%; padding: 6px; background: #444; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">
-                    Clear All
-                </button>
-            </div>
         </div>
 
         <!-- Center: Grid -->
@@ -303,34 +243,21 @@
                 <div id="saved-maps-list" style="max-height: 150px; overflow-y: auto; font-size: 11px;"></div>
             </div>
 
-            <button onclick="importFromCode()">📥 Import from Code</button>
-            <button class="cta-button" onclick="showQROverlay()">📱 Show QR Code</button>
-
             <div class="zoom-controls">
                 <button onclick="zoomIn()">Zoom +</button>
                 <button onclick="zoomOut()">Zoom -</button>
                 <button onclick="zoomFit()">Fit All</button>
             </div>
             <div class="zoom-label" id="zoom-level">100%</div>
-            <button onclick="centerMap()">🎯 Center</button>
             <button id="undo-btn" onclick="undo()" disabled>↩️ Undo (0)</button>
+            <button id="fill-btn" onclick="startFillMode()">Fill Rectangle</button>
+            <button onclick="clearGrid()">Clear All</button>
             <button onclick="loadFromImage()">Load from PNG</button>
         </div>
     </div>
 
     <div class="status-bar">
         <span id="status">Map ready. Paint tiles to edit.</span>
-    </div>
-
-    <!-- QR Code Overlay -->
-    <div id="qr-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 10000; justify-content: center; align-items: center;">
-        <div style="background: white; padding: 30px; border-radius: 10px; text-align: center; position: relative;">
-            <button onclick="hideQROverlay()" style="position: absolute; top: 10px; right: 10px; background: transparent; color: #000; border: none; width: 30px; height: 30px; cursor: pointer; font-size: 28px; font-weight: bold; line-height: 1;">×</button>
-            <h2 style="margin: 0 0 20px 0; color: #222; font-family: monospace;">Scan to Share Map</h2>
-            <div id="qr-overlay-container"></div>
-            <div id="qr-overlay-info" style="margin-top: 15px; font-size: 14px; color: #666; font-family: monospace;"></div>
-            <button onclick="saveQRCodePNG()" style="margin-top: 20px; padding: 10px 20px; background: #2563eb; color: #fff; border: none; border-radius: 5px; font-family: monospace; font-size: 16px; cursor: pointer; font-weight: bold;">💾 Save PNG</button>
-        </div>
     </div>
 
     <script>
@@ -353,8 +280,8 @@
             15: '#228B22'  // Cash Register - money green
         };
 
-        let COLS = 40;  // Default map size
-        let ROWS = 35;
+        const COLS = 40;  // Optimized for QR code compression (40×70 = 2,800 tiles)
+        const ROWS = 70;
         let selectedType = 5;
         let grid = [];
         let isMouseDown = false;
@@ -365,10 +292,67 @@
         let fillStart = null;
         let fillPreview = null;
 
-        // Initialize grid with default size
+        // Initialize grid with CURRENT game map (source of truth: GameScene.ts)
         function initGrid() {
-            // Blank 40×35 grid - start designing!
-            grid = Array(35).fill(null).map(() => Array(40).fill(0));
+            grid = [
+                [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+                [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
+                [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
+                [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
+                [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
+                [3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,5,5,5,5,5,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,6,6,6,6,6,6,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,6,6,6,6,6,6,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,9,6,6,5,5,9,5,5,5,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,10,5,3,3,3,3,3,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,5,3,3,3,3,3,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,6,6,5,3,3,3,3,3,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,5,5,3,3,3,3,3,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,3,3,3,3,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,3,3,3,3,3],
+                [3,3,3,3,3,3,3,3,3,3,3,3,3,3,7,7,7,7,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,3,7,7,7,7,3,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,3,7,7,7,7,3,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,3,7,7,7,7,3,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+                [3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+            ];
         }
 
         function renderGrid() {
@@ -520,9 +504,8 @@
         function clearGrid() {
             if (confirm('Clear the entire grid?')) {
                 saveHistory();
-                grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(0)); // Fill with street tiles
+                grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(1));
                 renderGrid();
-                document.getElementById('status').textContent = '✅ Grid cleared';
             }
         }
 
@@ -748,385 +731,6 @@
                 `;
             }).join('');
         }
-
-        // ============================================================
-        // QR CODE COMPRESSION & SHARING
-        // ============================================================
-
-        /**
-         * Compress map grid into Base64 string for QR encoding
-         */
-        function compressMap(gridData) {
-            const height = gridData.length;
-            const width = gridData[0]?.length || 0;
-
-            // Flatten grid into 1D array
-            const tiles = [];
-            for (let row = 0; row < height; row++) {
-                for (let col = 0; col < width; col++) {
-                    tiles.push(gridData[row][col]);
-                }
-            }
-
-            // Pack two 4-bit tiles into each byte
-            const bytes = [];
-            for (let i = 0; i < tiles.length; i += 2) {
-                const tile1 = tiles[i];
-                const tile2 = tiles[i + 1] || 0;
-                const packed = (tile1 << 4) | tile2;
-                bytes.push(packed);
-            }
-
-            // Prepend width and height
-            const header = [width, height];
-            const fullData = [...header, ...bytes];
-
-            // Convert to Base64
-            const binaryString = String.fromCharCode(...fullData);
-            const base64 = btoa(binaryString);
-
-            return base64;
-        }
-
-        /**
-         * Decompress Base64 string back into map grid
-         */
-        function decompressMap(base64) {
-            const binaryString = atob(base64);
-            const bytes = [];
-            for (let i = 0; i < binaryString.length; i++) {
-                bytes.push(binaryString.charCodeAt(i));
-            }
-
-            const width = bytes[0];
-            const height = bytes[1];
-            const dataBytes = bytes.slice(2);
-
-            // Unpack tiles
-            const tiles = [];
-            for (const byte of dataBytes) {
-                const tile1 = (byte >> 4) & 0x0F;
-                const tile2 = byte & 0x0F;
-                tiles.push(tile1, tile2);
-            }
-
-            tiles.length = width * height;
-
-            // Reconstruct 2D grid
-            const gridData = [];
-            for (let row = 0; row < height; row++) {
-                const rowData = [];
-                for (let col = 0; col < width; col++) {
-                    const index = row * width + col;
-                    rowData.push(tiles[index]);
-                }
-                gridData.push(rowData);
-            }
-
-            return { grid: gridData, width, height };
-        }
-
-        /**
-         * Show QR code in overlay
-         */
-        function showQROverlay() {
-            try {
-                const compressed = compressMap(grid);
-                const compressedSize = Math.ceil(compressed.length * 3 / 4);
-                const qrVersion = getQRVersion(compressed.length);
-
-                // Clear previous QR code
-                const container = document.getElementById('qr-overlay-container');
-                const qrInfo = document.getElementById('qr-overlay-info');
-                container.innerHTML = '';
-
-                // Generate large QR code
-                const qr = new QRCode(container, {
-                    text: compressed,
-                    width: 400,
-                    height: 400,
-                    colorDark: '#000000',
-                    colorLight: '#ffffff',
-                    correctLevel: QRCode.CorrectLevel.M
-                });
-
-                qrInfo.textContent = `Map: ${COLS}×${ROWS} (${compressedSize} bytes • ${compressed.length} chars)`;
-
-                // Update status bar with QR version
-                document.getElementById('status').textContent = `📱 QR Code v${qrVersion} • ${compressed.length} chars • ${COLS}×${ROWS} map`;
-
-                // Show overlay
-                document.getElementById('qr-overlay').style.display = 'flex';
-            } catch (error) {
-                console.error('QR generation failed:', error);
-                alert('Failed to generate QR code: ' + error.message);
-            }
-        }
-
-        /**
-         * Hide QR code overlay
-         */
-        function hideQROverlay() {
-            document.getElementById('qr-overlay').style.display = 'none';
-        }
-
-        /**
-         * Save QR code as PNG
-         */
-        function saveQRCodePNG() {
-            const container = document.getElementById('qr-overlay-container');
-            const canvas = container.querySelector('canvas');
-
-            if (!canvas) {
-                alert('No QR code to save!');
-                return;
-            }
-
-            // Generate filename with map dimensions and timestamp
-            const timestamp = new Date().toISOString().slice(0, 10);
-            const filename = `drunk-sim-map-${COLS}x${ROWS}-${timestamp}.png`;
-
-            // Convert canvas to blob and download
-            canvas.toBlob((blob) => {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                a.click();
-                URL.revokeObjectURL(url);
-                document.getElementById('status').textContent = `💾 QR code saved as ${filename}`;
-            });
-        }
-
-        /**
-         * Import map from compressed code
-         */
-        function importFromCode() {
-            const code = prompt('Paste the compressed map code (Base64 string):');
-            if (!code) {
-                document.getElementById('status').textContent = '❌ Import cancelled';
-                return;
-            }
-
-            try {
-                saveHistory(); // Save current state before importing
-                const { grid: importedGrid, width, height } = decompressMap(code);
-
-                if (width !== COLS || height !== ROWS) {
-                    if (!confirm(`Imported map is ${width}×${height}, but editor is ${COLS}×${ROWS}. Import anyway?`)) {
-                        document.getElementById('status').textContent = '❌ Import cancelled';
-                        return;
-                    }
-                }
-
-                grid = importedGrid;
-                renderGrid();
-                document.getElementById('status').textContent = `✅ Map imported! (${width}×${height})`;
-            } catch (error) {
-                document.getElementById('status').textContent = `❌ Import failed: ${error.message}`;
-                console.error(error);
-            }
-        }
-
-        // ============================================================
-        // MAP SIZE CONTROLS
-        // ============================================================
-
-        /**
-         * Set preset map size
-         */
-        function setPresetSize(width, height) {
-            document.getElementById('map-width').value = width;
-            document.getElementById('map-height').value = height;
-            updateSizeInfo();
-        }
-
-        /**
-         * Get QR code version based on data size
-         */
-        function getQRVersion(base64Length) {
-            // QR Code versions and their capacities (Medium error correction, alphanumeric)
-            const versions = [
-                { version: 1, capacity: 20 },
-                { version: 2, capacity: 38 },
-                { version: 3, capacity: 61 },
-                { version: 4, capacity: 90 },
-                { version: 5, capacity: 122 },
-                { version: 10, capacity: 324 },
-                { version: 15, capacity: 588 },
-                { version: 20, capacity: 858 },
-                { version: 25, capacity: 1118 },
-                { version: 30, capacity: 1468 },
-                { version: 35, capacity: 1794 },
-                { version: 40, capacity: 2331 }
-            ];
-
-            for (const v of versions) {
-                if (base64Length <= v.capacity) {
-                    return v.version;
-                }
-            }
-            return 40; // Max version
-        }
-
-        /**
-         * Update size info display
-         */
-        function updateSizeInfo() {
-            const width = parseInt(document.getElementById('map-width').value) || 40;
-            const height = parseInt(document.getElementById('map-height').value) || 70;
-            const totalTiles = width * height;
-            const estimatedBytes = Math.ceil(totalTiles / 2) + 2; // 2 tiles per byte + header
-            const base64Chars = Math.ceil(estimatedBytes * 4 / 3);
-            const qrVersion = getQRVersion(base64Chars);
-
-            // Update map size label
-            document.getElementById('map-size-label').textContent =
-                `Map Size (${totalTiles.toLocaleString()} tiles)`;
-
-            // Update size info with QR version
-            document.getElementById('size-info').textContent =
-                `QR v${qrVersion} • ${base64Chars.toLocaleString()} chars`;
-        }
-
-        /**
-         * Check if all tiles are empty (street tiles)
-         */
-        function isMapEmpty() {
-            for (let row = 0; row < ROWS; row++) {
-                for (let col = 0; col < COLS; col++) {
-                    if (grid[row][col] !== 0) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-
-        /**
-         * Resize the map grid
-         */
-        function resizeMap() {
-            const newWidth = parseInt(document.getElementById('map-width').value);
-            const newHeight = parseInt(document.getElementById('map-height').value);
-
-            if (!newWidth || !newHeight || newWidth < 10 || newHeight < 10) {
-                document.getElementById('status').textContent = '❌ Invalid size! Minimum 10×10';
-                return;
-            }
-
-            if (newWidth > 60 || newHeight > 100) {
-                document.getElementById('status').textContent = '❌ Map too large! Max 60×100';
-                return;
-            }
-
-            // Only confirm if shrinking and map has data
-            const isEmpty = isMapEmpty();
-            if (!isEmpty && (newWidth < COLS || newHeight < ROWS) && !confirm('Shrinking the map will lose data. Continue?')) {
-                document.getElementById('status').textContent = '❌ Resize cancelled';
-                return;
-            }
-
-            saveHistory();
-
-            // Create new grid
-            const newGrid = Array(newHeight).fill(null).map(() => Array(newWidth).fill(0));
-
-            // Copy existing data (preserve top-left corner)
-            for (let row = 0; row < Math.min(ROWS, newHeight); row++) {
-                for (let col = 0; col < Math.min(COLS, newWidth); col++) {
-                    newGrid[row][col] = grid[row][col];
-                }
-            }
-
-            // Update global constants and grid
-            COLS = newWidth;
-            ROWS = newHeight;
-            grid = newGrid;
-
-            renderGrid();
-            updateSizeInfo();
-            document.getElementById('status').textContent = `✅ Map resized to ${newWidth}×${newHeight}`;
-        }
-
-        // Update size info when inputs change
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('map-width').addEventListener('input', updateSizeInfo);
-            document.getElementById('map-height').addEventListener('input', updateSizeInfo);
-            updateSizeInfo();
-        });
-
-        // ============================================================
-        // CENTER MAP & RIGHT-CLICK PANNING
-        // ============================================================
-
-        /**
-         * Center map view and reset zoom to 100%
-         */
-        function centerMap() {
-            zoomLevel = 1.0;
-            updateZoom();
-
-            const container = document.getElementById('grid-container');
-            const gridEl = document.getElementById('grid');
-
-            // Center the grid in the viewport
-            container.scrollLeft = (gridEl.scrollWidth - container.clientWidth) / 2;
-            container.scrollTop = (gridEl.scrollHeight - container.clientHeight) / 2;
-
-            document.getElementById('status').textContent = '🎯 Map centered at 100% zoom';
-        }
-
-        /**
-         * Right-click drag panning
-         */
-        let isPanning = false;
-        let panStartX, panStartY, scrollLeft, scrollTop;
-
-        const gridContainer = document.getElementById('grid-container');
-
-        // Prevent default context menu on grid container
-        gridContainer.addEventListener('contextmenu', (e) => {
-            if (!fillMode) {
-                e.preventDefault();
-            }
-        });
-
-        // Start panning on right mouse button down
-        gridContainer.addEventListener('mousedown', (e) => {
-            if (e.button === 2 && !fillMode) { // Right mouse button
-                isPanning = true;
-                panStartX = e.pageX;
-                panStartY = e.pageY;
-                scrollLeft = gridContainer.scrollLeft;
-                scrollTop = gridContainer.scrollTop;
-                e.preventDefault();
-            }
-        });
-
-        // Update scroll position during pan
-        gridContainer.addEventListener('mousemove', (e) => {
-            if (!isPanning) return;
-            e.preventDefault();
-
-            const dx = e.pageX - panStartX;
-            const dy = e.pageY - panStartY;
-
-            gridContainer.scrollLeft = scrollLeft - dx;
-            gridContainer.scrollTop = scrollTop - dy;
-        });
-
-        // Stop panning on mouse up
-        gridContainer.addEventListener('mouseup', (e) => {
-            if (e.button === 2) {
-                isPanning = false;
-            }
-        });
-
-        // Stop panning if mouse leaves container
-        gridContainer.addEventListener('mouseleave', () => {
-            isPanning = false;
-        });
 
         // Initialize
         initGrid();
