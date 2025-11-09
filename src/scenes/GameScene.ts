@@ -744,7 +744,7 @@ const map: number[][] = [
                 } else if (state === 'thirsty') {
                     // Only go to bar if they want more drinks
                     if (drinksConsumed < drinksWanted) {
-                        // Find closest bar service zone
+                        // Find closest available bar service zone (not crowded)
                         let closestZone: {x: number, y: number, width: number, height: number} | null = null;
                         let closestDist = Infinity;
 
@@ -754,6 +754,33 @@ const map: number[][] = [
                             const dx = zoneCenterX - npc.x;
                             const dy = zoneCenterY - npc.y;
                             const dist = Math.sqrt(dx * dx + dy * dy);
+
+                            // Check if zone is crowded - count patrons within 1 tile (32px)
+                            let patronsNearby = 0;
+
+                            // Check player
+                            if (this.player.getData('state') === 'waiting' || this.player.getData('state') === 'thirsty') {
+                                const playerDx = this.player.x - zoneCenterX;
+                                const playerDy = this.player.y - zoneCenterY;
+                                const playerDist = Math.sqrt(playerDx * playerDx + playerDy * playerDy);
+                                if (playerDist < 32) patronsNearby++;
+                            }
+
+                            // Check other patrons
+                            this.npcs.children.entries.forEach((other: any) => {
+                                if (other === npc) return;
+                                if (other.getData('type') !== 'patron') return;
+                                const otherState = other.getData('state');
+                                if (otherState !== 'waiting' && otherState !== 'thirsty') return;
+
+                                const otherDx = other.x - zoneCenterX;
+                                const otherDy = other.y - zoneCenterY;
+                                const otherDist = Math.sqrt(otherDx * otherDx + otherDy * otherDy);
+                                if (otherDist < 32) patronsNearby++;
+                            });
+
+                            // Skip crowded zones (more than 1 patron already there)
+                            if (patronsNearby > 1) return;
 
                             if (dist < closestDist) {
                                 closestDist = dist;
@@ -801,6 +828,30 @@ const map: number[][] = [
                                 console.log(`🚶 Patron entered service zone @ (${patronX},${patronY}), now waiting`);
                             } else {
                                 npc.setVelocity(dx, dy);
+                            }
+                        } else {
+                            // All service zones are crowded - wander around and try again
+                            console.log('😤 Patron found all bars crowded, wandering...');
+                            let wanderTarget = npc.getData('wanderTarget');
+
+                            if (!wanderTarget || Math.abs(npc.x - wanderTarget.x) < 30 && Math.abs(npc.y - wanderTarget.y) < 30) {
+                                // Pick random spot in bar area
+                                wanderTarget = {
+                                    x: (2 + Math.random() * 18) * this.TILE_SIZE + 16,
+                                    y: (8 + Math.random() * 13) * this.TILE_SIZE + 16
+                                };
+                                npc.setData('wanderTarget', wanderTarget);
+                            }
+
+                            const dx = wanderTarget.x - npc.x;
+                            const dy = wanderTarget.y - npc.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+
+                            if (dist > 0.1) {
+                                const separation = this.getSeparationForce(npc, drunkLevel);
+                                const moveX = (dx / dist) * npcSpeed + separation.x;
+                                const moveY = (dy / dist) * npcSpeed + separation.y;
+                                npc.setVelocity(moveX, moveY);
                             }
                         }
                     } else {
