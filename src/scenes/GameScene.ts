@@ -1450,28 +1450,27 @@ const map: number[][] = [
             }
 
             if (bartenderState === 'idle') {
-                // Bartenders in idle state scan by rotating their vision cone
-                const scanDirection = bartender.getData('scanDirection') || 1;
-                const currentFacing = bartender.getData('facingAngle');
+                // Bartenders always face their service zones
+                const barIndex = bartender.getData('barIndex');
+                const nearbyZones = this.barServiceZones.filter(zone => {
+                    const dx = (zone.x + zone.width / 2) - bartender.x;
+                    const dy = (zone.y + zone.height / 2) - bartender.y;
+                    return Math.sqrt(dx * dx + dy * dy) < 200;
+                });
 
-                // Scan speed: rotate ~60 degrees per second at 60fps
-                const scanSpeed = Math.PI / 3 / 60;  // 60 degrees/sec
-                const newFacing = currentFacing + (scanSpeed * scanDirection);
+                if (nearbyZones.length > 0) {
+                    // Calculate average position of service zones
+                    let avgX = 0;
+                    let avgY = 0;
+                    nearbyZones.forEach(zone => {
+                        avgX += zone.x + zone.width / 2;
+                        avgY += zone.y + zone.height / 2;
+                    });
+                    avgX /= nearbyZones.length;
+                    avgY /= nearbyZones.length;
 
-                // Check if vision cone edge is hitting a wall
-                const coneHalfAngle = Math.PI / 2.5 / 2;  // Half of cone width
-                const leftEdge = newFacing - coneHalfAngle;
-                const rightEdge = newFacing + coneHalfAngle;
-
-                const hitWallLeft = this.isWallInDirection(bartender.x, bartender.y, leftEdge, 160);
-                const hitWallRight = this.isWallInDirection(bartender.x, bartender.y, rightEdge, 160);
-
-                // Reverse direction if either edge hits a wall
-                if ((scanDirection > 0 && hitWallRight) || (scanDirection < 0 && hitWallLeft)) {
-                    bartender.setData('scanDirection', -scanDirection);
-                } else {
-                    // Update facing angle for scanning
-                    bartender.setData('facingAngle', newFacing);
+                    // Face toward service zones
+                    bartender.setData('facingAngle', Math.atan2(avgY - bartender.y, avgX - bartender.x));
                 }
 
                 // Find closest waiting customer in bartender's vision cone
@@ -1547,8 +1546,52 @@ const map: number[][] = [
                     const custY = Math.round(closestCustomer.y);
                     const dist = Math.round(allWaitingCustomers[0].dist);
                     console.log(`🎯 Bartender serving closest: ${customerType} @ (${custX},${custY}) dist=${dist}px`);
+                    bartender.setVelocity(0, 0);
                     bartender.setData('state', 'going_to_tap');
                     bartender.setData('target', closestCustomer);
+                } else {
+                    // No customers in vision cone - patrol work area to find them
+                    const barIndex = bartender.getData('barIndex');
+                    let patrolTarget = bartender.getData('patrolTarget');
+
+                    // If no patrol target or reached it, pick a new one
+                    if (!patrolTarget || Math.abs(bartender.x - patrolTarget.x) < 20) {
+                        // Find all nearby service zones
+                        const nearbyZones = this.barServiceZones.filter(zone => {
+                            const dx = (zone.x + zone.width / 2) - bartender.x;
+                            const dy = (zone.y + zone.height / 2) - bartender.y;
+                            return Math.sqrt(dx * dx + dy * dy) < 200;
+                        });
+
+                        if (nearbyZones.length > 0) {
+                            // Pick a random point along the bar (behind service zones)
+                            const randomZone = nearbyZones[Math.floor(Math.random() * nearbyZones.length)];
+                            const zoneCenterX = randomZone.x + randomZone.width / 2;
+                            const zoneCenterY = randomZone.y + randomZone.height / 2;
+
+                            // Move to a position behind the service zone
+                            const angle = Math.atan2(zoneCenterY - bartender.y, zoneCenterX - bartender.x);
+                            patrolTarget = {
+                                x: zoneCenterX - Math.cos(angle) * 40,
+                                y: zoneCenterY - Math.sin(angle) * 40
+                            };
+                            bartender.setData('patrolTarget', patrolTarget);
+                        }
+                    }
+
+                    // Move toward patrol target
+                    if (patrolTarget) {
+                        const dx = patrolTarget.x - bartender.x;
+                        const dy = patrolTarget.y - bartender.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+
+                        if (dist > 5) {
+                            const speed = 60;
+                            bartender.setVelocity((dx / dist) * speed, (dy / dist) * speed);
+                        } else {
+                            bartender.setVelocity(0, 0);
+                        }
+                    }
                 }
             } else if (bartenderState === 'going_to_tap') {
                 // Find closest available (unreserved) beer tap
