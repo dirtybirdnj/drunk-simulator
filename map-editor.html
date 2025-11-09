@@ -368,6 +368,7 @@
         let fillMode = false;
         let fillStart = null;
         let fillPreview = null;
+        let historySavedThisStroke = false; // Track if history was saved for current paint stroke
 
         // Initialize grid with default size
         function initGrid() {
@@ -390,29 +391,7 @@
                     cell.dataset.row = row;
                     cell.dataset.col = col;
 
-                    cell.addEventListener('mousedown', (e) => {
-                        if (fillMode) {
-                            e.preventDefault();
-                            handleFillClick(row, col);
-                        } else {
-                            isMouseDown = true;
-                            saveHistory(); // Save state before making changes
-                            paintCell(row, col);
-                        }
-                    });
-                    cell.addEventListener('mouseenter', () => {
-                        if (fillMode) {
-                            updateFillPreview(row, col);
-                        } else if (isMouseDown) {
-                            paintCell(row, col);
-                        }
-                    });
-                    cell.addEventListener('contextmenu', (e) => {
-                        if (fillMode) {
-                            e.preventDefault();
-                            cancelFillMode();
-                        }
-                    });
+                    // NO individual event listeners - using delegation instead
 
                     rowEl.appendChild(cell);
                 }
@@ -479,6 +458,7 @@
 
         document.addEventListener('mouseup', () => {
             isMouseDown = false;
+            historySavedThisStroke = false; // Reset for next paint stroke
         });
 
         // Keyboard shortcuts
@@ -1172,6 +1152,60 @@
         // Stop panning if mouse leaves container
         gridContainer.addEventListener('mouseleave', () => {
             isPanning = false;
+        });
+
+        // ============================================================
+        // EVENT DELEGATION FOR GRID (instead of 8400 individual listeners!)
+        // ============================================================
+
+        const gridEl = document.getElementById('grid');
+
+        // Handle mousedown on grid (replaces 2800 individual listeners)
+        gridEl.addEventListener('mousedown', (e) => {
+            const cell = e.target.closest('.cell');
+            if (!cell) return;
+
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+
+            if (fillMode) {
+                e.preventDefault();
+                handleFillClick(row, col);
+            } else {
+                isMouseDown = true;
+                // Only save history once per paint stroke
+                if (!historySavedThisStroke) {
+                    saveHistory();
+                    historySavedThisStroke = true;
+                }
+                paintCell(row, col);
+            }
+        });
+
+        // Handle mouseenter on grid (replaces 2800 individual listeners)
+        gridEl.addEventListener('mouseover', (e) => {
+            const cell = e.target.closest('.cell');
+            if (!cell) return;
+
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+
+            if (fillMode) {
+                updateFillPreview(row, col);
+            } else if (isMouseDown) {
+                paintCell(row, col);
+            }
+        });
+
+        // Handle contextmenu on grid (replaces 2800 individual listeners)
+        gridEl.addEventListener('contextmenu', (e) => {
+            const cell = e.target.closest('.cell');
+            if (!cell) return;
+
+            if (fillMode) {
+                e.preventDefault();
+                cancelFillMode();
+            }
         });
 
         // Initialize
