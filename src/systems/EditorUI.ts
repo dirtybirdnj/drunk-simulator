@@ -43,19 +43,29 @@ export class EditorUI {
     }
 
     create(): void {
-        // Use camera display dimensions for positioning UI
         const camera = this.scene.cameras.main;
-        const width = camera.width;
-        const height = camera.height;
 
-        console.log('📐 Creating EditorUI');
+        // CRITICAL: Use the actual display size, not camera bounds
+        const displayWidth = this.scene.scale.displaySize.width;
+        const displayHeight = this.scene.scale.displaySize.height;
+        const canvasWidth = this.scene.game.canvas.width;
+        const canvasHeight = this.scene.game.canvas.height;
+
+        console.log('📐 Creating EditorUI - DEBUGGING DIMENSIONS:');
         console.log('  → Camera size:', camera.width, 'x', camera.height);
         console.log('  → Camera zoom:', camera.zoom);
-        console.log('  → Camera bounds:', camera.x, camera.y, camera.width, camera.height);
-        console.log('  → Game scale:', this.scene.scale.width, 'x', this.scene.scale.height);
+        console.log('  → Scale size:', this.scene.scale.width, 'x', this.scene.scale.height);
+        console.log('  → Display size:', displayWidth, 'x', displayHeight);
+        console.log('  → Canvas size:', canvasWidth, 'x', canvasHeight);
+        console.log('  → Canvas style:', this.scene.game.canvas.style.width, 'x', this.scene.game.canvas.style.height);
+
+        // Use the SMALLER of camera height and display height
+        const width = Math.min(camera.width, displayWidth);
+        const height = Math.min(camera.height, displayHeight);
+
+        console.log('  → USING width:', width, 'height:', height);
 
         // Create bottom bar as fixed UI overlay
-        // Position at bottom of camera viewport
         const barHeight = 100;
         const barY = height - (barHeight / 2);
 
@@ -172,11 +182,15 @@ export class EditorUI {
     }
 
     private createModeButton(): void {
-        const camera = this.scene.cameras.main;
-        const x = camera.width - 120;
+        // Use same width logic as create()
+        const displayWidth = this.scene.scale.displaySize.width;
+        const cameraWidth = this.scene.cameras.main.width;
+        const width = Math.min(cameraWidth, displayWidth);
+
+        const x = width - 120;
         const y = 0; // Relative to bottom bar container
 
-        console.log('🔘 Creating START button');
+        console.log('🔘 Creating START button at x:', x);
 
         this.modeButton = this.scene.add.container(x, y);
 
@@ -201,14 +215,18 @@ export class EditorUI {
     }
 
     private createPlaybackControls(): void {
-        const camera = this.scene.cameras.main;
-        const centerX = camera.width - 300;
+        // Use same width logic as create()
+        const displayWidth = this.scene.scale.displaySize.width;
+        const cameraWidth = this.scene.cameras.main.width;
+        const width = Math.min(cameraWidth, displayWidth);
+
+        const centerX = width - 300;
         const y = 0; // Relative to bottom bar container
 
         this.playbackControls = this.scene.add.container(centerX, y);
         this.playbackControls.setVisible(false);
 
-        console.log('🎮 Created playback controls');
+        console.log('🎮 Created playback controls at x:', centerX);
 
         const buttonData = [
             { x: -120, label: '🐌 Slow', scale: 0.5 },
