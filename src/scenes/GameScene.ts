@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { NPCData } from '../types/NPCData';
+import { decompressMap } from '../utils/mapCompression';
 
 export class GameScene extends Phaser.Scene {
     private player!: Phaser.Physics.Arcade.Sprite;
@@ -73,8 +74,20 @@ export class GameScene extends Phaser.Scene {
         super({ key: 'GameScene' });
     }
 
-    init(data: { selectedMap?: string | null }) {
-        // Load selected map from localStorage if provided
+    init(data: { selectedMap?: string | null; scannedMapData?: string }) {
+        // Priority 1: Check for scannedMapData (from QR code or editor)
+        if (data.scannedMapData) {
+            try {
+                const decompressed = decompressMap(data.scannedMapData);
+                this.selectedMapData = decompressed.grid;
+                console.log(`📍 Loaded compressed map: ${decompressed.width}×${decompressed.height}`);
+                return;
+            } catch (error) {
+                console.error('❌ Failed to decompress map:', error);
+            }
+        }
+
+        // Priority 2: Load selected map from localStorage if provided
         if (data.selectedMap) {
             const savedMapsStr = localStorage.getItem('drunkSimMaps') || '[]';
             const savedMaps = JSON.parse(savedMapsStr);
