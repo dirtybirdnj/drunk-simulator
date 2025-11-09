@@ -19,6 +19,11 @@ export class EditorUI {
     private paletteTiles: Map<number, Phaser.GameObjects.Rectangle> = new Map();
     private modeButton!: Phaser.GameObjects.Container;
     private playbackControls!: Phaser.GameObjects.Container;
+    private undoButton!: Phaser.GameObjects.Container;
+
+    // Undo history
+    private editHistory: Array<{row: number, col: number, oldTile: number, newTile: number}> = [];
+    private maxHistorySize = 50;
 
     // Tile palette for free game (limited set)
     private readonly FREE_TILES = [
@@ -69,6 +74,9 @@ export class EditorUI {
 
         // Create tile palette
         this.createTilePalette();
+
+        // Create undo button
+        this.createUndoButton();
 
         // Create mode button (Start Game / Restart)
         this.createModeButton();
@@ -128,6 +136,39 @@ export class EditorUI {
         this.selectTile(this.FREE_TILES[0]);
 
         console.log('✅ Created', this.paletteTiles.size, 'palette tiles');
+    }
+
+    private createUndoButton(): void {
+        // Position after tile palette
+        const startX = 60;
+        const tileSize = 40;
+        const spacing = 10;
+        const paletteWidth = this.FREE_TILES.length * (tileSize + spacing);
+        const x = startX + paletteWidth + 20;
+        const y = 0; // Relative to container
+
+        this.undoButton = this.scene.add.container(x, y);
+
+        const bg = this.scene.add.rectangle(0, 0, 80, 60, 0x6366f1);
+        bg.setStrokeStyle(3, 0xFFFFFF);
+        bg.setInteractive({ useHandCursor: true });
+
+        const text = this.scene.add.text(0, 0, '↶ UNDO', {
+            fontSize: '16px',
+            color: '#FFFFFF',
+            fontFamily: 'Arial',
+            fontStyle: 'bold'
+        });
+        text.setOrigin(0.5);
+
+        bg.on('pointerdown', () => this.undo());
+        bg.on('pointerover', () => bg.setFillStyle(0x4f46e5));
+        bg.on('pointerout', () => bg.setFillStyle(0x6366f1));
+
+        this.undoButton.add([bg, text]);
+        this.bottomBar.add(this.undoButton);
+
+        console.log('✅ Created undo button');
     }
 
     private createModeButton(): void {
@@ -227,9 +268,10 @@ export class EditorUI {
         this.mode = mode;
 
         if (mode === EditorMode.EDIT) {
-            // Show palette, hide playback controls
-            console.log('  → Showing palette tiles');
+            // Show palette and undo, hide playback controls
+            console.log('  → Showing palette tiles and undo button');
             this.paletteTiles.forEach(bg => bg.setVisible(true));
+            this.undoButton.setVisible(true);
             this.playbackControls.setVisible(false);
 
             // Update button
@@ -240,9 +282,10 @@ export class EditorUI {
             this.enableGridEditing();
             console.log('  → Grid editing enabled');
         } else {
-            // Hide palette, show playback controls
-            console.log('  → Hiding palette, showing playback controls');
+            // Hide palette and undo, show playback controls
+            console.log('  → Hiding palette and undo, showing playback controls');
             this.paletteTiles.forEach(bg => bg.setVisible(false));
+            this.undoButton.setVisible(false);
             this.playbackControls.setVisible(true);
 
             // Disable grid editing
@@ -268,6 +311,42 @@ export class EditorUI {
 
         // Pass to GameScene to handle tile placement
         this.scene.placeTileAt(worldX, worldY, this.selectedTile);
+    }
+
+    public trackEdit(row: number, col: number, oldTile: number, newTile: number): void {
+        // Don't track if tile didn't actually change
+        if (oldTile === newTile) return;
+
+        // Add to history
+        this.editHistory.push({ row, col, oldTile, newTile });
+
+        // Limit history size
+        if (this.editHistory.length > this.maxHistorySize) {
+            this.editHistory.shift();
+        }
+
+        console.log('📝 Edit tracked. History size:', this.editHistory.length);
+    }
+
+    private undo(): void {
+        if (this.mode !== EditorMode.EDIT) return;
+        if (this.editHistory.length === 0) {
+            console.log('⚠️ Nothing to undo');
+            return;
+        }
+
+        // Pop last edit from history
+        const lastEdit = this.editHistory.pop()!;
+
+        // Restore old tile
+        this.scene.placeTileAt(
+            lastEdit.col * this.scene.getTileSize() + this.scene.getTileSize() / 2,
+            lastEdit.row * this.scene.getTileSize() + this.scene.getTileSize() / 2,
+            lastEdit.oldTile,
+            false // Don't track this change
+        );
+
+        console.log('↶ Undid edit. History size:', this.editHistory.length);
     }
 
     private setTimeScale(scale: number): void {

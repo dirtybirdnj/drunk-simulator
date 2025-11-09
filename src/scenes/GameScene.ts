@@ -714,7 +714,7 @@ export class GameScene extends Phaser.Scene {
     // ========== IN-GAME EDITOR METHODS (Free Mobile Version) ==========
     // See EDITOR_ARCHITECTURE.md for details on dual-editor system
 
-    public placeTileAt(worldX: number, worldY: number, tileType: number): void {
+    public placeTileAt(worldX: number, worldY: number, tileType: number, trackEdit: boolean = true): void {
         // Convert world coordinates to grid coordinates
         const col = Math.floor(worldX / this.TILE_SIZE);
         const row = Math.floor(worldY / this.TILE_SIZE);
@@ -724,14 +724,26 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
+        // Track old tile for undo
+        const oldTile = this.currentGrid[row][col];
+
         // Update grid data
         this.currentGrid[row][col] = tileType;
+
+        // Track edit in history (if requested)
+        if (trackEdit && this.editorUI) {
+            this.editorUI.trackEdit(row, col, oldTile, tileType);
+        }
 
         // Update visual representation
         this.updateTileVisual(row, col, tileType);
 
         // Auto-save to localStorage
         this.saveCurrentLayout();
+    }
+
+    public getTileSize(): number {
+        return this.TILE_SIZE;
     }
 
     private updateTileVisual(row: number, col: number, tileType: number): void {
