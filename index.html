@@ -161,6 +161,12 @@
                 editorLoaded = true;
             }
 
+            // CRITICAL: Pause Phaser game loop to stop GPU rendering
+            if (window.phaserGame && window.phaserGame.loop) {
+                window.phaserGame.loop.sleep();
+                console.log('⏸️ Paused Phaser game loop');
+            }
+
             container.style.display = 'block';
             document.getElementById('game-container').style.display = 'none';
             document.getElementById('phone-wrapper').style.display = 'none';
@@ -170,6 +176,12 @@
             document.getElementById('editor-container').style.display = 'none';
             document.getElementById('game-container').style.display = 'flex';
             document.getElementById('phone-wrapper').style.display = 'flex';
+
+            // CRITICAL: Resume Phaser game loop
+            if (window.phaserGame && window.phaserGame.loop) {
+                window.phaserGame.loop.wake();
+                console.log('▶️ Resumed Phaser game loop');
+            }
         };
 
         // Start game with map from editor
