@@ -632,7 +632,7 @@ const map: number[][] = [
                     }
 
                     // Find closest unvisited POI
-                    let closestPoi = null;
+                    let closestPoi: {x: number, y: number} | null = null;
                     let closestDist = Infinity;
                     let closestIndex = -1;
 
@@ -644,7 +644,7 @@ const map: number[][] = [
 
                             if (dist < closestDist) {
                                 closestDist = dist;
-                                closestPoi = poi;
+                                closestPoi = {x: poi.x, y: poi.y};
                                 closestIndex = index;
                             }
                         }
@@ -656,8 +656,11 @@ const map: number[][] = [
                     }
 
                     // Move toward closest unvisited POI
-                    const dx = closestPoi.x - npc.x;
-                    const dy = closestPoi.y - npc.y;
+                    const poi = closestPoi as {x: number, y: number};
+                    const poiX = poi.x;
+                    const poiY = poi.y;
+                    const dx = poiX - npc.x;
+                    const dy = poiY - npc.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
                     const separation = this.getSeparationForce(npc, drunkLevel);
@@ -676,7 +679,7 @@ const map: number[][] = [
                     // Only go to bar if they want more drinks
                     if (drinksConsumed < drinksWanted) {
                         // Find closest bar service zone
-                        let closestZone = null;
+                        let closestZone: {x: number, y: number, width: number, height: number} | null = null;
                         let closestDist = Infinity;
 
                         this.barServiceZones.forEach(zone => {
@@ -688,13 +691,18 @@ const map: number[][] = [
 
                             if (dist < closestDist) {
                                 closestDist = dist;
-                                closestZone = zone;
+                                closestZone = {x: zone.x, y: zone.y, width: zone.width, height: zone.height};
                             }
                         });
 
                         if (closestZone) {
-                            const zoneCenterX = closestZone.x + closestZone.width / 2;
-                            const zoneCenterY = closestZone.y + closestZone.height / 2;
+                            const zone = closestZone as {x: number, y: number, width: number, height: number};
+                            const zoneX = zone.x;
+                            const zoneY = zone.y;
+                            const zoneWidth = zone.width;
+                            const zoneHeight = zone.height;
+                            const zoneCenterX = zoneX + zoneWidth / 2;
+                            const zoneCenterY = zoneY + zoneHeight / 2;
 
                             let dx = zoneCenterX - npc.x;
                             let dy = zoneCenterY - npc.y;
