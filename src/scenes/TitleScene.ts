@@ -126,8 +126,8 @@ export class TitleScene extends Phaser.Scene {
         // Add bokeh effect to drunk4
         const drunk4Bokeh = drunk4.postFX.addBokeh(0);
 
-        // "SIMULATOR" text - static below (moved down 2 inches = 192px)
-        const simulator = this.add.text(width / 2, 632, 'SIMULATOR', {
+        // "SIMULATOR" text - static below (moved down 3 inches = 288px)
+        const simulator = this.add.text(width / 2, 728, 'SIMULATOR', {
             fontSize: '64px',
             color: '#FFD700',
             fontFamily: 'Pixelify Sans, sans-serif',
@@ -150,8 +150,8 @@ export class TitleScene extends Phaser.Scene {
         drunk1.setAlpha(1.0); // Full opacity for readability
         // NO bokeh effect on this layer for clarity
 
-        // Description text (moved down 2 inches = ~192px total)
-        const description = this.add.text(width / 2, 780, 'A simulation game to experiment\nwith crowd dynamics by making a bar', {
+        // Description text (moved down 3 inches = 288px total)
+        const description = this.add.text(width / 2, 876, 'A simulation game to experiment\nwith crowd dynamics by making a bar', {
             fontSize: '28px',
             color: '#FFD700',
             fontFamily: 'Pixelify Sans, sans-serif',
