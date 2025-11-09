@@ -45,25 +45,17 @@ export class EditorUI {
     create(): void {
         const camera = this.scene.cameras.main;
 
-        // CRITICAL: Use the actual display size, not camera bounds
-        const displayWidth = this.scene.scale.displaySize.width;
-        const displayHeight = this.scene.scale.displaySize.height;
-        const canvasWidth = this.scene.game.canvas.width;
-        const canvasHeight = this.scene.game.canvas.height;
-
         console.log('📐 Creating EditorUI - DEBUGGING DIMENSIONS:');
         console.log('  → Camera size:', camera.width, 'x', camera.height);
         console.log('  → Camera zoom:', camera.zoom);
-        console.log('  → Scale size:', this.scene.scale.width, 'x', this.scene.scale.height);
-        console.log('  → Display size:', displayWidth, 'x', displayHeight);
-        console.log('  → Canvas size:', canvasWidth, 'x', canvasHeight);
-        console.log('  → Canvas style:', this.scene.game.canvas.style.width, 'x', this.scene.game.canvas.style.height);
+        console.log('  → Display size:', this.scene.scale.displaySize.width, 'x', this.scene.scale.displaySize.height);
 
-        // Use the SMALLER of camera height and display height
-        const width = Math.min(camera.width, displayWidth);
-        const height = Math.min(camera.height, displayHeight);
+        // CRITICAL: When using setScrollFactor(0), coordinates are in CAMERA space
+        // We must use camera dimensions (1024×1824), not display dimensions
+        const width = camera.width;
+        const height = camera.height;
 
-        console.log('  → USING width:', width, 'height:', height);
+        console.log('  → USING camera dimensions for positioning:', width, 'x', height);
 
         // Create bottom bar as fixed UI overlay
         const barHeight = 100;
@@ -182,11 +174,8 @@ export class EditorUI {
     }
 
     private createModeButton(): void {
-        // Use same width logic as create()
-        const displayWidth = this.scene.scale.displaySize.width;
-        const cameraWidth = this.scene.cameras.main.width;
-        const width = Math.min(cameraWidth, displayWidth);
-
+        // Use camera width (coordinates are in camera space)
+        const width = this.scene.cameras.main.width;
         const x = width - 120;
         const y = 0; // Relative to bottom bar container
 
@@ -215,11 +204,8 @@ export class EditorUI {
     }
 
     private createPlaybackControls(): void {
-        // Use same width logic as create()
-        const displayWidth = this.scene.scale.displaySize.width;
-        const cameraWidth = this.scene.cameras.main.width;
-        const width = Math.min(cameraWidth, displayWidth);
-
+        // Use camera width (coordinates are in camera space)
+        const width = this.scene.cameras.main.width;
         const centerX = width - 300;
         const y = 0; // Relative to bottom bar container
 
