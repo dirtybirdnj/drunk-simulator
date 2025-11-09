@@ -1906,22 +1906,25 @@ export class GameScene extends Phaser.Scene {
             this.conversationGraphics.lineTo(playerSocialTarget.x, playerSocialTarget.y);
             this.conversationGraphics.strokePath();
 
-            // Draw progress bar above player
+            // Draw progress bar above player (matching beer pour style)
             const elapsed = Date.now() - socialStartTime;
             const progress = Math.min(1, elapsed / 10000);
 
-            const barWidth = 50;
-            const barHeight = 6;
+            const barWidth = 60;
+            const barHeight = 8;
             const barX = this.player.x - barWidth / 2;
-            const barY = this.player.y - 25;
+            const barY = this.player.y - 30;
 
-            this.conversationGraphics.fillStyle(0x333333, 1);
+            // Background (grey)
+            this.conversationGraphics.fillStyle(0x555555, 1);
             this.conversationGraphics.fillRect(barX, barY, barWidth, barHeight);
 
-            this.conversationGraphics.fillStyle(0x8B0000, 1);
+            // Progress (bright red for conversation)
+            this.conversationGraphics.fillStyle(0xFF0000, 1);
             this.conversationGraphics.fillRect(barX, barY, barWidth * progress, barHeight);
 
-            this.conversationGraphics.lineStyle(1, 0xFFFFFF, 1);
+            // Border (white)
+            this.conversationGraphics.lineStyle(2, 0xFFFFFF, 1);
             this.conversationGraphics.strokeRect(barX, barY, barWidth, barHeight);
         }
 
