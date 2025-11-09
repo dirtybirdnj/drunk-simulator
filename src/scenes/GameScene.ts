@@ -143,9 +143,12 @@ export class GameScene extends Phaser.Scene {
         this.mapBuilder = new MapBuilder(this, this.walls, this.TILE_SIZE);
         this.visualizationHelpers = new VisualizationHelpers(this);
 
-        // Build the entire map
+        // Load or create the initial grid layout for editing
+        this.loadSavedLayout();
+
+        // Build the entire map using currentGrid
         const mapResult = this.mapBuilder.buildMap(
-            this.selectedMapData,
+            this.currentGrid,
             this.MAP_ROWS,
             this.MAP_COLS,
             this.beerTaps,
@@ -356,25 +359,15 @@ export class GameScene extends Phaser.Scene {
             this.MAP_ROWS
         );
 
-        // Spawn initial patrons immediately
-        for (let i = 0; i < 3; i++) {
-            this.npcSpawner.spawnPatron(this.patronSpawns);
-        }
-
-        // Start patron spawning timer - spawn every 2 seconds
-        this.patronSpawnTimer = this.time.addEvent({
-            delay: 2000,  // Reduced from 5000
-            callback: () => this.npcSpawner.spawnPatron(this.patronSpawns),
-            callbackScope: this,
-            loop: true
-        });
-
         // Initialize in-game editor (free mobile version)
-        this.loadSavedLayout();
+        // Start in EDIT mode - don't spawn NPCs or start simulation yet
         this.editorUI = new EditorUI(this);
         this.editorUI.create();
 
-        console.log('🛠️ In-game editor initialized');
+        // Pause physics initially - will unpause when player clicks START
+        this.physics.pause();
+
+        console.log('🛠️ In-game editor initialized in EDIT mode');
     }
 
     update() {
@@ -749,8 +742,23 @@ export class GameScene extends Phaser.Scene {
         // Save the layout one final time
         this.saveCurrentLayout();
 
-        // The editorUI will handle UI changes
-        // Game simulation is already running via update() loop
+        // Resume physics
+        this.physics.resume();
+
+        // Spawn initial patrons
+        for (let i = 0; i < 3; i++) {
+            this.npcSpawner.spawnPatron(this.patronSpawns);
+        }
+
+        // Start patron spawning timer
+        this.patronSpawnTimer = this.time.addEvent({
+            delay: 2000,
+            callback: () => this.npcSpawner.spawnPatron(this.patronSpawns),
+            callbackScope: this,
+            loop: true
+        });
+
+        console.log('✅ Game simulation started');
     }
 
     public restartLevel(): void {
@@ -774,9 +782,14 @@ export class GameScene extends Phaser.Scene {
             this.patronSpawnTimer.remove();
         }
 
+        // Pause physics (return to EDIT mode)
+        this.physics.pause();
+
         // Update UI
         const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];
         this.cashText.setText(`$${this.gameState.cashEarned} / $${levelConfig.cashThreshold}`);
+
+        console.log('✅ Returned to EDIT mode');
     }
 
     private saveCurrentLayout(): void {
@@ -806,15 +819,11 @@ export class GameScene extends Phaser.Scene {
             }
         }
 
-        // No saved layout, use starter layout or create empty grid
-        if (this.selectedMapData) {
-            this.currentGrid = JSON.parse(JSON.stringify(this.selectedMapData)); // Deep copy
-        } else {
-            // Create empty grid based on level size
-            const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];
-            this.currentGrid = Array(levelConfig.worldHeight).fill(0).map(() =>
-                Array(levelConfig.worldWidth).fill(0)
-            );
-        }
+        // No saved layout - create simple default (all grey street tiles)
+        const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];
+        this.currentGrid = Array(levelConfig.worldHeight).fill(0).map(() =>
+            Array(levelConfig.worldWidth).fill(0)  // 0 = grey street tile
+        );
+        console.log(`🆕 Created default layout: ${levelConfig.worldWidth}×${levelConfig.worldHeight} grey tiles`);
     }
 }
