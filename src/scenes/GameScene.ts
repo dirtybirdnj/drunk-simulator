@@ -470,9 +470,35 @@ const map: number[][] = [
                 bartender.setData('hasBeer', false);
                 bartender.setData('pourTimer', 0);
                 bartender.setData('target', null);
-                bartender.setData('facingAngle', 0);  // Direction bartender faces
+
+                // Find center of nearest service zones to determine initial facing direction
+                const nearbyZones = this.barServiceZones.filter(zone => {
+                    const dx = (zone.x + zone.width / 2) - spawn.x;
+                    const dy = (zone.y + zone.height / 2) - spawn.y;
+                    return Math.sqrt(dx * dx + dy * dy) < 150;  // Within ~4-5 tiles
+                });
+
+                let initialFacing = 0;  // Default: face right
+                if (nearbyZones.length > 0) {
+                    // Calculate average position of nearby service zones
+                    let avgX = 0;
+                    let avgY = 0;
+                    nearbyZones.forEach(zone => {
+                        avgX += zone.x + zone.width / 2;
+                        avgY += zone.y + zone.height / 2;
+                    });
+                    avgX /= nearbyZones.length;
+                    avgY /= nearbyZones.length;
+
+                    // Face toward service zones
+                    initialFacing = Math.atan2(avgY - spawn.y, avgX - spawn.x);
+                }
+
+                bartender.setData('facingAngle', initialFacing);  // Direction bartender faces
+                bartender.setData('scanTimer', 0);  // Timer for scanning behavior
+                bartender.setData('scanDirection', 1);  // 1 = clockwise, -1 = counterclockwise
                 bartender.setData('barIndex', index);  // Which bar this bartender works at
-                console.log(`👔 Bartender ${index} spawned at (${Math.round(spawn.x)}, ${Math.round(spawn.y)})`);
+                console.log(`👔 Bartender ${index} spawned at (${Math.round(spawn.x)}, ${Math.round(spawn.y)}), facing ${(initialFacing * 180 / Math.PI).toFixed(0)}°`);
             });
             console.log(`👔 Spawned ${employeeSpawns.length} bartenders total`);
         } else {
@@ -968,6 +994,28 @@ const map: number[][] = [
             const bartenderState = bartender.getData('state');
 
             if (bartenderState === 'idle') {
+                // Idle bartenders slowly scan the bar area by rotating their vision cone
+                const scanTimer = bartender.getData('scanTimer') || 0;
+                const scanDirection = bartender.getData('scanDirection') || 1;
+                const currentFacing = bartender.getData('facingAngle');
+
+                // Scan 90 degrees (PI/2) over 3 seconds, then reverse
+                const scanSpeed = (Math.PI / 2) / (3 * 60);  // 90 degrees over 3 seconds at 60fps
+                const newFacing = currentFacing + (scanSpeed * scanDirection);
+
+                // Update facing angle
+                bartender.setData('facingAngle', newFacing);
+
+                // Update scan timer
+                const newScanTimer = scanTimer + (1/60);  // Increment by 1 frame
+                bartender.setData('scanTimer', newScanTimer);
+
+                // Reverse direction every 3 seconds
+                if (newScanTimer >= 3) {
+                    bartender.setData('scanDirection', -scanDirection);
+                    bartender.setData('scanTimer', 0);
+                }
+
                 // Find closest waiting customer in bartender's vision cone
                 const allWaitingCustomers: any[] = [];
 
