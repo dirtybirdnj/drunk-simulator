@@ -1032,11 +1032,12 @@ const map: number[][] = [
                     const dy = target.y - bartender.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
-                    // Bartenders can serve patrons up to 2 tiles away (64px) - must be close
-                    if (dist <= 64) {
+                    // Bartenders can serve patrons up to 1.5 tiles away (48px) - must be close
+                    if (dist <= 48) {
                         bartender.setVelocity(0, 0);
                         target.setData('state', 'has_beer');
                         target.setData('beerAmount', 100);
+                        target.setData('waitStartTime', 0); // Reset wait timer!
 
                         // Show beer icon
                         if (target === this.player) {
