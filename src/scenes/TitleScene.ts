@@ -118,11 +118,11 @@ export class TitleScene extends Phaser.Scene {
             ease: 'Sine.easeInOut'
         });
 
-        // Wobble animation for first beer emoji
+        // Wobble animation for first beer emoji - larger drift
         this.tweens.add({
             targets: beer1,
             angle: { from: -3, to: 3 },
-            x: { from: width / 2 - 5, to: width / 2 + 5 },
+            x: { from: width / 2 - 80, to: width / 2 + 80 },
             duration: 2000,
             yoyo: true,
             repeat: -1,
@@ -183,11 +183,11 @@ export class TitleScene extends Phaser.Scene {
                 ease: 'Sine.easeInOut'
             });
 
-            // Wobble animation for second beer emoji - different rate
+            // Wobble animation for second beer emoji - different rate, larger drift
             this.tweens.add({
                 targets: beer2,
                 angle: { from: -4, to: 4 },
-                x: { from: width / 2 - 7, to: width / 2 + 7 },
+                x: { from: width / 2 - 100, to: width / 2 + 100 },
                 duration: 2700, // Different duration for desync
                 yoyo: true,
                 repeat: -1,
