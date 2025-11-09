@@ -46,7 +46,7 @@ export class TitleScene extends Phaser.Scene {
         const drunk1 = this.add.text(width / 2, 276, 'DRUNK', {
             fontSize: '200px',
             color: '#FFD700',
-            fontFamily: 'Arial, sans-serif',
+            fontFamily: 'Pixelify Sans, sans-serif',
             fontStyle: 'bold',
             align: 'center'
         });
@@ -57,7 +57,7 @@ export class TitleScene extends Phaser.Scene {
         const drunk2 = this.add.text(width / 2, 276, 'DRUNK', {
             fontSize: '200px',
             color: '#FFD700',
-            fontFamily: 'Arial, sans-serif',
+            fontFamily: 'Pixelify Sans, sans-serif',
             fontStyle: 'bold',
             align: 'center'
         });
@@ -68,7 +68,7 @@ export class TitleScene extends Phaser.Scene {
         const simulator = this.add.text(width / 2, 440, 'SIMULATOR', {
             fontSize: '64px',
             color: '#FFD700',
-            fontFamily: 'Arial, sans-serif',
+            fontFamily: 'Pixelify Sans, sans-serif',
             fontStyle: 'bold',
             align: 'center'
         });
@@ -78,7 +78,7 @@ export class TitleScene extends Phaser.Scene {
         const description = this.add.text(width / 2, 684, 'A simulation game to experiment\nwith crowd dynamics by making a bar', {
             fontSize: '28px',
             color: '#FFD700',
-            fontFamily: 'Arial, sans-serif',
+            fontFamily: 'Pixelify Sans, sans-serif',
             fontStyle: 'italic',
             align: 'center',
             lineSpacing: 10
@@ -89,7 +89,7 @@ export class TitleScene extends Phaser.Scene {
         const credits = this.add.text(width / 2, height - 30, 'A game by Mat Gilbert / mat@vtapi.co', {
             fontSize: '18px',
             color: '#FFD700',
-            fontFamily: 'Arial, sans-serif',
+            fontFamily: 'Pixelify Sans, sans-serif',
             fontStyle: 'italic',
             align: 'center'
         });
@@ -270,16 +270,16 @@ export class TitleScene extends Phaser.Scene {
             });
         });
 
-        // Start button (always visible) - positioned below the title
-        const startY = height / 2 + 150;
+        // Start button (always visible) - positioned below the title (moved down 2 inches = 192px)
+        const startY = height / 2 + 342;
         const startBg = this.add.rectangle(width / 2, startY, 900, 250, 0x228B22);
         startBg.setStrokeStyle(10, 0xFFFFFF);
 
         const startText = this.add.text(width / 2, startY, '🍻 START 🍹', {
-            fontSize: '120px',
+            fontSize: '80px',
             color: '#FFD700',
-            fontFamily: 'Arial, sans-serif',
-            fontStyle: 'bold'
+            fontFamily: 'Pixelify Sans, sans-serif',
+            fontStyle: '900'
         });
         startText.setOrigin(0.5);
 
