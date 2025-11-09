@@ -22,6 +22,7 @@ export class GameScene extends Phaser.Scene {
     private conversationGraphics!: Phaser.GameObjects.Graphics;
     private serviceZoneGraphics!: Phaser.GameObjects.Graphics;
     private visionConeGraphics!: Phaser.GameObjects.Graphics;
+    private smokeParticles: Array<{x: number, y: number, alpha: number, vx: number, vy: number, life: number}> = [];
 
     // Map dimensions
     private readonly MAP_COLS = 32;
@@ -534,6 +535,10 @@ const map: number[][] = [
         npc.setData('wanderTarget', null);    // Wander destination
         npc.setData('visitedPois', []);       // Array of visited POI indices
         npc.setData('waitStartTime', 0);      // When started waiting for bartender
+        npc.setData('isSmoker', Math.random() < 0.5); // 50% chance of being a smoker
+        npc.setData('puffCount', 0);          // Number of puffs taken
+        npc.setData('puffTimer', 0);          // Timer for smoking
+        npc.setData('exhaling', false);       // Currently exhaling
 
         // Add beer icon (hidden initially)
         const beerIcon = this.add.sprite(npc.x, npc.y - 20, 'beer-sprite');
@@ -1035,6 +1040,104 @@ const map: number[][] = [
                         npc.setData('state', 'has_beer');
                         npc.setData('socialTarget', null);
                     }
+                } else if (state === 'going_to_patio') {
+                    // Patron heading to patio to smoke
+                    // Find a patio tile (type 2)
+                    const patioTargetX = (5 + Math.random() * 20) * this.TILE_SIZE + 16;
+                    const patioTargetY = (2 + Math.random() * 4) * this.TILE_SIZE + 16;
+
+                    const dx = patioTargetX - npc.x;
+                    const dy = patioTargetY - npc.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 32) {
+                        // Arrived at patio - start smoking
+                        npc.setVelocity(0, 0);
+                        npc.setData('state', 'smoking');
+                        npc.setData('puffCount', 0);
+                        npc.setData('puffTimer', Date.now());
+                        console.log('🚬 Patron arrived at patio, starting to smoke');
+                    } else {
+                        // Move toward patio with reduced separation force
+                        const separation = this.getSeparationForce(npc, drunkLevel);
+                        const moveX = (dx / dist) * npcSpeed + separation.x * 0.2;
+                        const moveY = (dy / dist) * npcSpeed + separation.y * 0.2;
+                        npc.setVelocity(moveX, moveY);
+                    }
+                } else if (state === 'smoking') {
+                    // Patron is smoking - stand still and puff cigarette
+                    npc.setVelocity(0, 0);
+
+                    const puffCount = npc.getData('puffCount');
+                    const puffTimer = npc.getData('puffTimer');
+                    const exhaling = npc.getData('exhaling');
+                    const totalPuffs = 10 + Math.floor(Math.random() * 3); // 10-12 puffs
+
+                    const now = Date.now();
+                    const timeSincePuff = now - puffTimer;
+
+                    if (puffCount >= totalPuffs) {
+                        // Done smoking - return to has_beer behavior
+                        npc.setData('state', 'has_beer');
+                        npc.setData('puffCount', 0);
+                        console.log('🚬 Patron finished smoking, going back inside');
+                    } else if (exhaling) {
+                        // Exhaling phase (1-2 seconds)
+                        const exhaleTime = 1000 + Math.random() * 1000;
+                        if (timeSincePuff > exhaleTime) {
+                            // Done exhaling, wait before next puff
+                            npc.setData('exhaling', false);
+                            npc.setData('puffTimer', now);
+                        } else {
+                            // Create smoke particles while exhaling
+                            if (Math.random() < 0.3) { // 30% chance each frame
+                                this.smokeParticles.push({
+                                    x: npc.x + (Math.random() - 0.5) * 10,
+                                    y: npc.y - 15,
+                                    alpha: 0.6,
+                                    vx: (Math.random() - 0.5) * 20,
+                                    vy: -20 - Math.random() * 20,
+                                    life: 1.0
+                                });
+                            }
+                        }
+                    } else {
+                        // Waiting between puffs (2-3 seconds)
+                        const waitTime = 2000 + Math.random() * 1000;
+                        if (timeSincePuff > waitTime) {
+                            // Take next puff
+                            npc.setData('puffCount', puffCount + 1);
+                            npc.setData('exhaling', true);
+                            npc.setData('puffTimer', now);
+
+                            // Consume beer while smoking (similar to conversations)
+                            const currentBeerAmount = npc.getData('beerAmount');
+                            const beerPerPuff = 100 / totalPuffs; // Distribute beer consumption across puffs
+                            const newBeerAmount = Math.max(0, currentBeerAmount - beerPerPuff);
+                            npc.setData('beerAmount', newBeerAmount);
+                        }
+                    }
+
+                    // Allow socializing while smoking - look for nearby smokers
+                    const socialTarget = npc.getData('socialTarget');
+                    if (!socialTarget && Math.random() < 0.01) { // Occasionally look for smoking buddy
+                        this.npcs.children.entries.forEach((other: any) => {
+                            if (other === npc) return;
+                            if (other.getData('type') !== 'patron') return;
+                            if (other.getData('state') !== 'smoking') return;
+
+                            const dx = other.x - npc.x;
+                            const dy = other.y - npc.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+
+                            // Talk to smokers within 2 tiles
+                            if (dist < 64) {
+                                npc.setData('socialTarget', other);
+                                other.setData('socialTarget', npc);
+                                console.log('💬 Smokers started chatting on patio');
+                            }
+                        });
+                    }
                 }
             }
         });
@@ -1198,18 +1301,27 @@ const map: number[][] = [
                     // Bartenders can serve patrons up to 2 tiles away (64px)
                     if (dist <= 64) {
                         bartender.setVelocity(0, 0);
-                        target.setData('state', 'has_beer');
                         target.setData('beerAmount', 100);
                         target.setData('waitStartTime', 0); // Reset wait timer!
 
                         // Show beer icon
                         if (target === this.player) {
                             this.playerBeerIcon.setVisible(true);
+                            target.setData('state', 'has_beer');
                             console.log('🍺 Bartender delivered beer to PLAYER!');
                         } else {
                             const beerIcon = target.getData('beerIcon');
                             if (beerIcon) {
                                 beerIcon.setVisible(true);
+                            }
+
+                            // Smokers go to patio, non-smokers wander/socialize
+                            const isSmoker = target.getData('isSmoker');
+                            if (isSmoker) {
+                                target.setData('state', 'going_to_patio');
+                                console.log('🚬 Patron going to patio for a smoke!');
+                            } else {
+                                target.setData('state', 'has_beer');
                                 console.log('🍺 Bartender delivered beer to patron!');
                             }
                         }
@@ -1365,6 +1477,27 @@ const map: number[][] = [
                     this.conversationGraphics.strokeRect(barX, barY, barWidth, barHeight);
                 }
             }
+        });
+
+        // Update and render smoke particles
+        this.smokeParticles = this.smokeParticles.filter(particle => {
+            // Update particle position
+            particle.x += particle.vx * 0.016;  // Assume ~60fps
+            particle.y += particle.vy * 0.016;
+            particle.life -= 0.016;  // Fade over 1 second
+            particle.alpha = particle.life * 0.6;
+
+            // Slow down horizontal movement
+            particle.vx *= 0.95;
+            particle.vy *= 0.98;
+
+            // Draw particle if still alive
+            if (particle.life > 0) {
+                this.conversationGraphics.fillStyle(0xCCCCCC, particle.alpha);
+                this.conversationGraphics.fillCircle(particle.x, particle.y, 3 + (1 - particle.life) * 2);
+                return true;
+            }
+            return false;
         });
     }
 
