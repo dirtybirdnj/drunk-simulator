@@ -65,8 +65,6 @@
             transform: translate(-50%, -50%);
             width: 460px;
             height: 940px;
-            max-width: 80vw;
-            max-height: 90vh;
             background-image: url('https://www.webmobilefirst.com/en/mockups/iPhone_14_plus/iPhone_14_plus_black_1179x2556.png');
             background-size: contain;
             background-repeat: no-repeat;
@@ -95,25 +93,10 @@
             z-index: 10000;
         }
 
-        /* Show mockup only on desktop */
+        /* Show mockup only on desktop (1024px+) */
         @media (min-width: 1024px) {
             #phone-mockup {
                 display: block;
-            }
-        }
-
-        /* Responsive scaling for smaller windows (e.g., when DevTools is open) */
-        @media (max-width: 1400px) {
-            #phone-mockup {
-                width: 380px;
-                height: 780px;
-            }
-        }
-
-        @media (max-height: 900px) {
-            #phone-mockup {
-                height: 80vh;
-                width: auto;
             }
         }
 
