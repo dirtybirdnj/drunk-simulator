@@ -161,6 +161,30 @@ export class GameScene extends Phaser.Scene {
 
         // Camera setup - follows player vertically, locked horizontally
         this.cameras.main.setBounds(0, 0, this.MAP_COLS * this.TILE_SIZE, this.MAP_ROWS * this.TILE_SIZE);
+
+        // Calculate zoom to fill viewport with smaller maps
+        const gameWidth = 1024;  // Canvas width from config
+        const gameHeight = 1824; // Canvas height from config
+        const mapPixelWidth = this.MAP_COLS * this.TILE_SIZE;
+        const mapPixelHeight = this.MAP_ROWS * this.TILE_SIZE;
+
+        // Calculate zoom factors for width and height
+        const zoomX = gameWidth / mapPixelWidth;
+        const zoomY = gameHeight / mapPixelHeight;
+
+        // Use the smaller zoom to ensure entire map fits, but scale up small maps
+        const zoom = Math.min(zoomX, zoomY);
+
+        if (zoom > 1) {
+            // Map is smaller than viewport, zoom in to fill space
+            this.cameras.main.setZoom(zoom);
+            console.log(`📷 Zooming camera to ${zoom.toFixed(2)}x to fill viewport (map: ${this.MAP_COLS}×${this.MAP_ROWS})`);
+        } else {
+            // Map is larger than viewport, use default zoom
+            this.cameras.main.setZoom(1);
+            console.log(`📷 Using default zoom for large map (${this.MAP_COLS}×${this.MAP_ROWS})`);
+        }
+
         this.cameras.main.startFollow(this.player, false, 0.08, 0.08);
 
         // Center camera horizontally on the map, vertically on player
