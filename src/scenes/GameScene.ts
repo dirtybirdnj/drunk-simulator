@@ -1782,27 +1782,7 @@ const map: number[][] = [
                         life: 1.5 // 1.5 seconds
                     });
 
-                    // Reset bartender to face service zones again
-                    const barIndex = bartender.getData('barIndex');
-                    const nearbyZones = this.barServiceZones.filter(zone => {
-                        const dx = (zone.x + zone.width / 2) - bartender.x;
-                        const dy = (zone.y + zone.height / 2) - bartender.y;
-                        return Math.sqrt(dx * dx + dy * dy) < 150;
-                    });
-
-                    if (nearbyZones.length > 0) {
-                        let avgX = 0;
-                        let avgY = 0;
-                        nearbyZones.forEach(zone => {
-                            avgX += zone.x + zone.width / 2;
-                            avgY += zone.y + zone.height / 2;
-                        });
-                        avgX /= nearbyZones.length;
-                        avgY /= nearbyZones.length;
-
-                        bartender.setData('facingAngle', Math.atan2(avgY - bartender.y, avgX - bartender.x));
-                    }
-
+                    // Immediately return to idle - sweeping code will handle facing
                     bartender.setData('state', 'idle');
                     console.log('💰 Ka-ching! Sale registered, back to idle');
                 } else {
