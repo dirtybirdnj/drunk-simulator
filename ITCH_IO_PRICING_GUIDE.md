@@ -1,5 +1,18 @@
 # itch.io Two-Tier Pricing Strategy
 
+## The Trap (I mean... Strategy) 😈
+
+You have **two paid versions** on itch.io that funnel curious players toward your GitHub repo where they can "unlock" everything by learning to code.
+
+**Three-tier system:**
+1. **itch.io Base** - $2.99 - Play only, scan QR codes
+2. **itch.io Premium** - $7.99 - Includes map editor
+3. **GitHub Developers** - FREE (but requires learning) - Full access + modify game
+
+Players who get curious enough to Google "drunk simulator unlock editor" will find your GitHub repo and have to learn git, npm, and terminal commands to run it. **That's the real game.** 🎓
+
+---
+
 You have **two versions** of Drunk Simulator ready for itch.io:
 
 ---
@@ -21,7 +34,7 @@ You have **two versions** of Drunk Simulator ready for itch.io:
 - ❌ No map editor
 - ❌ Can't create own maps
 
-**Recommended pricing:** Free or $0.99 - $1.99
+**Recommended pricing:** $2.99 - $4.99
 
 **Player experience:**
 "I want to play the game and try maps my friends made"
@@ -107,16 +120,20 @@ You have **two versions** of Drunk Simulator ready for itch.io:
 ## Price Recommendations
 
 **Conservative:**
-- Base: Free
-- Premium: $1.99
-
-**Moderate:**
-- Base: $0.99
-- Premium: $2.99
-
-**Aggressive:**
 - Base: $1.99
 - Premium: $4.99
+
+**Moderate (Recommended):**
+- Base: $2.99
+- Premium: $7.99
+
+**Aggressive:**
+- Base: $4.99
+- Premium: $9.99
+
+**Secret Fourth Tier:**
+- GitHub: FREE (but must learn git, npm, terminal)
+- This is the real "premium" - knowledge
 
 **Name Your Own Price:**
 - Minimum: $0.00 (base) / $1.99 (premium)
