@@ -38,8 +38,13 @@ export class EditorUI {
     }
 
     create(): void {
-        const { width, height } = this.scene.cameras.main;
-        console.log('📐 Creating EditorUI - Camera size:', width, 'x', height);
+        // Get the actual game config dimensions (not camera dimensions)
+        const width = this.scene.game.config.width as number;
+        const height = this.scene.game.config.height as number;
+
+        console.log('📐 Creating EditorUI - Game config size:', width, 'x', height);
+        console.log('📐 Camera size:', this.scene.cameras.main.width, 'x', this.scene.cameras.main.height);
+        console.log('📐 Camera zoom:', this.scene.cameras.main.zoom);
 
         // Create bottom bar container - positioned at absolute bottom
         this.bottomBar = this.scene.add.container(0, 0);
@@ -51,7 +56,7 @@ export class EditorUI {
         const barBg = this.scene.add.rectangle(width / 2, barY, width, 100, 0x000000, 0.95);
         this.bottomBar.add(barBg);
 
-        console.log('✅ Created bottom bar at y:', barY);
+        console.log('✅ Created bottom bar at y:', barY, '(visible height:', height, ')');
 
         // Create tile palette
         this.createTilePalette();
@@ -67,7 +72,7 @@ export class EditorUI {
     }
 
     private createTilePalette(): void {
-        const { height } = this.scene.cameras.main;
+        const height = this.scene.game.config.height as number;
         const barY = height - 50;
 
         const startX = 60;
@@ -120,7 +125,8 @@ export class EditorUI {
     }
 
     private createModeButton(): void {
-        const { width, height } = this.scene.cameras.main;
+        const width = this.scene.game.config.width as number;
+        const height = this.scene.game.config.height as number;
         const x = width - 120;
         const y = height - 50;
 
@@ -149,7 +155,8 @@ export class EditorUI {
     }
 
     private createPlaybackControls(): void {
-        const { width, height } = this.scene.cameras.main;
+        const width = this.scene.game.config.width as number;
+        const height = this.scene.game.config.height as number;
         const centerX = width - 300;
         const y = height - 50;
 
