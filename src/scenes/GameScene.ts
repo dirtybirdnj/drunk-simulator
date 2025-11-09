@@ -372,7 +372,12 @@ const map: number[][] = [
             }
         }
 
-        console.log(`📍 Created ${this.barServiceZones.length} bar service zones`);
+        console.log(`📍 Created ${this.barServiceZones.length} bar service zones:`);
+        this.barServiceZones.forEach((zone, i) => {
+            const gridX = zone.x / this.TILE_SIZE;
+            const gridY = zone.y / this.TILE_SIZE;
+            console.log(`  Zone ${i}: Grid(${gridX},${gridY}) Pixel(${zone.x},${zone.y})`);
+        });
     }
 
     private addTile(col: number, row: number, tileType: number) {
@@ -725,6 +730,9 @@ const map: number[][] = [
                                 npc.setVelocity(0, 0);
                                 npc.setData('state', 'waiting');
                                 npc.setData('waitStartTime', Date.now());
+                                const patronX = Math.round(npc.x);
+                                const patronY = Math.round(npc.y);
+                                console.log(`🚶 Patron entered service zone @ (${patronX},${patronY}), now waiting`);
                             } else {
                                 npc.setVelocity(dx, dy);
                             }
@@ -734,6 +742,9 @@ const map: number[][] = [
                         npc.setVelocity(0, 0);
                     }
                 } else if (state === 'waiting') {
+                    // Patrons waiting for service must stand STILL in service zone
+                    npc.setVelocity(0, 0);
+
                     // Check if waited too long (10 seconds)
                     const waitStartTime = npc.getData('waitStartTime');
                     if (!waitStartTime) {
@@ -743,14 +754,6 @@ const map: number[][] = [
                         npc.setData('state', 'thirsty');
                         npc.setData('waitStartTime', 0);
                         return;
-                    }
-
-                    // Apply slight separation even when waiting
-                    const separation = this.getSeparationForce(npc, drunkLevel);
-                    if (Math.abs(separation.x) > 1 || Math.abs(separation.y) > 1) {
-                        npc.setVelocity(separation.x * 20, separation.y * 20);
-                    } else {
-                        npc.setVelocity(0, 0);
                     }
                 } else if (state === 'has_beer') {
                     // Patron has beer - wander around looking for other patrons to talk to
@@ -985,12 +988,16 @@ const map: number[][] = [
                 });
 
                 // Find closest waiting customer in service zones
+                console.log(`🔍 Bartender scanning: found ${allWaitingCustomers.length} customers in service zones`);
                 if (allWaitingCustomers.length > 0) {
                     allWaitingCustomers.sort((a, b) => a.dist - b.dist);
                     closestCustomer = allWaitingCustomers[0].entity;
 
                     const customerType = closestCustomer.getData('type');
-                    console.log(`🍺 Bartender found ${customerType} in service zone, going to tap`);
+                    const custX = Math.round(closestCustomer.x);
+                    const custY = Math.round(closestCustomer.y);
+                    const dist = Math.round(allWaitingCustomers[0].dist);
+                    console.log(`🎯 Bartender @ (${Math.round(bartender.x)},${Math.round(bartender.y)}) targeting ${customerType} @ (${custX},${custY}) dist=${dist}px`);
                     bartender.setData('state', 'going_to_tap');
                     bartender.setData('target', closestCustomer);
                 }
@@ -1036,6 +1043,21 @@ const map: number[][] = [
             } else if (bartenderState === 'serving') {
                 const target = bartender.getData('target');
                 if (target && target.active) {
+                    // Verify target is still in a service zone
+                    const targetInServiceZone = this.barServiceZones.some(zone =>
+                        target.x >= zone.x && target.x < zone.x + zone.width &&
+                        target.y >= zone.y && target.y < zone.y + zone.height
+                    );
+
+                    if (!targetInServiceZone) {
+                        // Target left service zone - cancel service
+                        console.log('❌ Target left service zone, canceling service');
+                        bartender.setData('target', null);
+                        bartender.setData('state', 'idle');
+                        bartender.setVelocity(0, 0);
+                        return;
+                    }
+
                     const dx = target.x - bartender.x;
                     const dy = target.y - bartender.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
