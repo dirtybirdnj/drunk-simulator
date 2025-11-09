@@ -1665,27 +1665,31 @@ const map: number[][] = [
                     // Update facing angle to look at target
                     bartender.setData('facingAngle', Math.atan2(dy, dx));
 
-                    // Check if bartender is touching a counter tile
-                    const bartenderGridX = Math.floor(bartender.x / this.TILE_SIZE);
-                    const bartenderGridY = Math.floor(bartender.y / this.TILE_SIZE);
+                    // Check if within 3 tiles (96px) to hand over beer
+                    const maxServeDistance = this.TILE_SIZE * 3; // 96 pixels
 
-                    // Check adjacent tiles for counter
-                    const isTouchingCounter = this.walls.children.entries.some((wall: any) => {
-                        const wallGridX = Math.floor(wall.x / this.TILE_SIZE);
-                        const wallGridY = Math.floor(wall.y / this.TILE_SIZE);
+                    if (dist <= maxServeDistance) {
+                        // Within range - check if bartender is touching a counter tile
+                        const bartenderGridX = Math.floor(bartender.x / this.TILE_SIZE);
+                        const bartenderGridY = Math.floor(bartender.y / this.TILE_SIZE);
 
-                        // Check if wall is adjacent (1 tile away in any direction)
-                        const gridDistX = Math.abs(wallGridX - bartenderGridX);
-                        const gridDistY = Math.abs(wallGridY - bartenderGridY);
+                        // Check adjacent tiles for counter
+                        const isTouchingCounter = this.walls.children.entries.some((wall: any) => {
+                            const wallGridX = Math.floor(wall.x / this.TILE_SIZE);
+                            const wallGridY = Math.floor(wall.y / this.TILE_SIZE);
 
-                        return (gridDistX <= 1 && gridDistY <= 1) && (gridDistX + gridDistY > 0);
-                    });
+                            // Check if wall is adjacent (1 tile away in any direction)
+                            const gridDistX = Math.abs(wallGridX - bartenderGridX);
+                            const gridDistY = Math.abs(wallGridY - bartenderGridY);
 
-                    // Can serve if touching counter (simplified handoff)
-                    if (isTouchingCounter) {
-                        bartender.setVelocity(0, 0);
-                        target.setData('beerAmount', 100);
-                        target.setData('waitStartTime', 0); // Reset wait timer!
+                            return (gridDistX <= 1 && gridDistY <= 1) && (gridDistX + gridDistY > 0);
+                        });
+
+                        // Can serve if touching counter and within range
+                        if (isTouchingCounter) {
+                            bartender.setVelocity(0, 0);
+                            target.setData('beerAmount', 100);
+                            target.setData('waitStartTime', 0); // Reset wait timer!
 
                         // Show beer icon
                         if (target === this.player) {
@@ -1710,40 +1714,52 @@ const map: number[][] = [
                             }
                         }
 
-                        bartender.setData('hasBeer', false);
-                        bartender.setData('target', null);
-                        bartender.setData('state', 'going_to_register');
-                        bartender.setData('reservedTapIndex', -1); // Release tap reservation
-                        console.log('💰 Bartender going to ring up sale');
-                    } else {
-                        // Move closer to counter
-                        // Find nearest counter tile
-                        let closestCounter: any = null;
-                        let closestDist = Infinity;
+                            bartender.setData('hasBeer', false);
+                            bartender.setData('target', null);
+                            bartender.setData('state', 'going_to_register');
+                            bartender.setData('reservedTapIndex', -1); // Release tap reservation
+                            console.log('💰 Bartender going to ring up sale');
+                        } else {
+                            // Not touching counter yet - move closer to counter
+                            // Find nearest counter tile
+                            let closestCounter: any = null;
+                            let closestDist = Infinity;
 
-                        this.walls.children.entries.forEach((wall: any) => {
-                            const wallDist = Math.sqrt(
-                                Math.pow(wall.x - bartender.x, 2) +
-                                Math.pow(wall.y - bartender.y, 2)
-                            );
-
-                            if (wallDist < closestDist) {
-                                closestDist = wallDist;
-                                closestCounter = wall;
-                            }
-                        });
-
-                        if (closestCounter) {
-                            const counterDx = closestCounter.x - bartender.x;
-                            const counterDy = closestCounter.y - bartender.y;
-                            const counterDist = Math.sqrt(counterDx * counterDx + counterDy * counterDy);
-
-                            if (counterDist > 0.1) {
-                                bartender.setVelocity(
-                                    (counterDx / counterDist) * npcSpeed,
-                                    (counterDy / counterDist) * npcSpeed
+                            this.walls.children.entries.forEach((wall: any) => {
+                                const wallDist = Math.sqrt(
+                                    Math.pow(wall.x - bartender.x, 2) +
+                                    Math.pow(wall.y - bartender.y, 2)
                                 );
+
+                                if (wallDist < closestDist) {
+                                    closestDist = wallDist;
+                                    closestCounter = wall;
+                                }
+                            });
+
+                            if (closestCounter) {
+                                const counterDx = closestCounter.x - bartender.x;
+                                const counterDy = closestCounter.y - bartender.y;
+                                const counterDist = Math.sqrt(counterDx * counterDx + counterDy * counterDy);
+
+                                if (counterDist > 0.1) {
+                                    bartender.setVelocity(
+                                        (counterDx / counterDist) * npcSpeed,
+                                        (counterDy / counterDist) * npcSpeed
+                                    );
+                                }
                             }
+                        }
+                    } else {
+                        // Too far from patron (>3 tiles) - follow them as they find empty service tile
+                        console.log(`👣 Bartender following patron (dist: ${Math.round(dist)}px)`);
+                        if (dist > 10) {
+                            bartender.setVelocity(
+                                (dx / dist) * npcSpeed,
+                                (dy / dist) * npcSpeed
+                            );
+                        } else {
+                            bartender.setVelocity(0, 0);
                         }
                     }
                 } else {
