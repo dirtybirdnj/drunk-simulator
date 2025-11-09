@@ -19,7 +19,7 @@ export class TitleScene extends Phaser.Scene {
 
         // First "DRUNK" text - wobbles and fades (moved down 1 inch = ~96px)
         const drunk1 = this.add.text(width / 2, 276, 'DRUNK', {
-            fontSize: '128px',
+            fontSize: '256px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
             fontStyle: 'bold',
@@ -30,7 +30,7 @@ export class TitleScene extends Phaser.Scene {
 
         // Second "DRUNK" text - offset animation, different rate
         const drunk2 = this.add.text(width / 2, 276, 'DRUNK', {
-            fontSize: '128px',
+            fontSize: '256px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
             fontStyle: 'bold',
@@ -40,7 +40,7 @@ export class TitleScene extends Phaser.Scene {
         drunk2.setAlpha(0.6);
 
         // "SIMULATOR" text - static below
-        const simulator = this.add.text(width / 2, 376, 'SIMULATOR', {
+        const simulator = this.add.text(width / 2, 440, 'SIMULATOR', {
             fontSize: '64px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
@@ -50,11 +50,13 @@ export class TitleScene extends Phaser.Scene {
         simulator.setOrigin(0.5);
 
         // Description text
-        const description = this.add.text(width / 2, 440, 'A simulation game to experiment\nwith crowd dynamics by making a bar', {
+        const description = this.add.text(width / 2, 540, 'A simulation game to experiment\nwith crowd dynamics by making a bar', {
             fontSize: '28px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
-            align: 'center'
+            fontStyle: 'italic',
+            align: 'center',
+            lineSpacing: 10
         });
         description.setOrigin(0.5);
 
@@ -126,11 +128,11 @@ export class TitleScene extends Phaser.Scene {
 
         // Start button (always visible) - positioned below the title
         const startY = height / 2 + 150;
-        const startBg = this.add.rectangle(width / 2, startY, 500, 90, 0x228B22);
-        startBg.setStrokeStyle(6, 0xFFFFFF);
+        const startBg = this.add.rectangle(width / 2, startY, 900, 250, 0x228B22);
+        startBg.setStrokeStyle(10, 0xFFFFFF);
 
         const startText = this.add.text(width / 2, startY, '🍻 START 🍹', {
-            fontSize: '42px',
+            fontSize: '168px',
             color: '#FFD700',
             fontFamily: 'Arial, sans-serif',
             fontStyle: 'bold'
