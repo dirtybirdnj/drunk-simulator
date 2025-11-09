@@ -2,24 +2,62 @@
   "name": "drunk-simulator",
   "version": "1.0.0",
   "description": "Top-down bar simulator with crowd dynamics",
-  "main": "index.js",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "prepare": "husky"
+    "prepare": "husky",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && NODE_ENV=development electron .\"",
+    "electron:build": "npm run build && electron-builder",
+    "cap:init": "cap init \"Drunk Simulator\" \"com.drunkgames.simulator\" --web-dir=dist",
+    "cap:add:ios": "cap add ios",
+    "cap:add:android": "cap add android",
+    "cap:sync": "npm run build && cap sync",
+    "cap:build:ios": "npm run cap:sync && cap build ios",
+    "cap:build:android": "npm run cap:sync && cap build android"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
+    "concurrently": "^9.2.1",
+    "electron": "^39.1.1",
+    "electron-builder": "^26.0.12",
     "husky": "^9.1.7",
     "typescript": "^5.3.3",
-    "vite": "^5.0.11"
+    "vite": "^5.0.11",
+    "wait-on": "^9.0.3"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/camera": "^7.0.2",
+    "@capacitor/cli": "^7.4.4",
+    "@capacitor/core": "^7.4.4",
+    "@capacitor/ios": "^7.4.4",
     "@types/qrcode": "^1.5.6",
     "canvas": "^3.2.0",
     "canvas-confetti": "^1.9.4",
     "phaser": "^3.70.0",
     "qrcode": "^1.5.4"
+  },
+  "build": {
+    "appId": "com.drunkgames.simulator",
+    "productName": "Drunk Simulator",
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "mac": {
+      "category": "public.app-category.games",
+      "target": ["dmg", "zip"]
+    },
+    "win": {
+      "target": ["nsis", "portable"]
+    },
+    "linux": {
+      "target": ["AppImage", "deb"]
+    }
   }
 }
