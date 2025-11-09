@@ -381,10 +381,11 @@
         }
 
         function renderGrid() {
-            console.log(`[DEBUG] ⚠️ renderGrid() called - rebuilding ${ROWS * COLS} cells`);
-            const startTime = performance.now();
             const gridEl = document.getElementById('grid');
             gridEl.innerHTML = '';
+
+            // Clear cell cache since we're rebuilding
+            cellCache.clear();
 
             for (let row = 0; row < ROWS; row++) {
                 const rowEl = document.createElement('div');
@@ -397,14 +398,13 @@
                     cell.dataset.row = row;
                     cell.dataset.col = col;
 
-                    // NO individual event listeners - using delegation instead
+                    // Cache the cell reference
+                    cellCache.set(`${row},${col}`, cell);
 
                     rowEl.appendChild(cell);
                 }
                 gridEl.appendChild(rowEl);
             }
-            const endTime = performance.now();
-            console.log(`[DEBUG] renderGrid() completed in ${(endTime - startTime).toFixed(2)}ms`);
         }
 
         function saveHistory() {
@@ -441,16 +441,26 @@
             }
         }
 
+        // Cache for cell DOM elements to avoid querySelector
+        let cellCache = new Map();
+
+        function getCellElement(row, col) {
+            const key = `${row},${col}`;
+            if (!cellCache.has(key)) {
+                const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                if (cell) cellCache.set(key, cell);
+            }
+            return cellCache.get(key);
+        }
+
         function paintCell(row, col) {
-            console.log(`[DEBUG] paintCell(${row}, ${col}) with type ${selectedType}`);
             // If painting a camera start tile (type 12), remove any existing one
             if (selectedType === 12) {
-                console.log('[DEBUG] Removing existing camera start tiles');
                 for (let r = 0; r < ROWS; r++) {
                     for (let c = 0; c < COLS; c++) {
                         if (grid[r][c] === 12) {
-                            grid[r][c] = 0; // Replace with street
-                            const oldCell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                            grid[r][c] = 0;
+                            const oldCell = getCellElement(r, c);
                             if (oldCell) {
                                 oldCell.style.background = COLORS[0];
                             }
@@ -460,9 +470,11 @@
             }
 
             grid[row][col] = selectedType;
-            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-            cell.style.background = COLORS[selectedType];
-            // Auto-update status
+            const cell = getCellElement(row, col);
+            if (cell) {
+                cell.style.background = COLORS[selectedType];
+            }
+            // Auto-update status (throttled via RAF below)
             document.getElementById('status').textContent = `Last edit: Row ${row}, Col ${col} → Type ${selectedType}`;
         }
 
@@ -1148,13 +1160,8 @@
         });
 
         // Update scroll position during pan
-        let panMoveCount = 0;
         gridContainer.addEventListener('mousemove', (e) => {
             if (!isPanning) return;
-            panMoveCount++;
-            if (panMoveCount % 50 === 0) {
-                console.log(`[DEBUG] Pan mousemove fired ${panMoveCount} times`);
-            }
             e.preventDefault();
 
             const dx = e.pageX - panStartX;
@@ -1184,16 +1191,11 @@
 
         // Handle mousedown on grid (replaces 2800 individual listeners)
         gridEl.addEventListener('mousedown', (e) => {
-            console.log('[DEBUG] mousedown event fired');
             const cell = e.target.closest('.cell');
-            if (!cell) {
-                console.log('[DEBUG] mousedown: no cell found');
-                return;
-            }
+            if (!cell) return;
 
             const row = parseInt(cell.dataset.row);
             const col = parseInt(cell.dataset.col);
-            console.log(`[DEBUG] mousedown: cell (${row}, ${col})`);
 
             if (fillMode) {
                 e.preventDefault();
@@ -1202,7 +1204,6 @@
                 isMouseDown = true;
                 // Only save history once per paint stroke
                 if (!historySavedThisStroke) {
-                    console.log('[DEBUG] Saving history');
                     saveHistory();
                     historySavedThisStroke = true;
                 }
@@ -1210,32 +1211,36 @@
             }
         });
 
-        // Handle mouseenter on grid (replaces 2800 individual listeners)
-        let mouseoverCount = 0;
+        // Handle mouseover with requestAnimationFrame throttling
+        let rafPending = false;
+        let pendingCell = null;
+        let pendingRow = null;
+        let pendingCol = null;
+
         gridEl.addEventListener('mouseover', (e) => {
-            mouseoverCount++;
-            if (mouseoverCount % 100 === 0) {
-                console.log(`[DEBUG] mouseover fired ${mouseoverCount} times`);
-            }
-
             const cell = e.target.closest('.cell');
-            if (!cell) return;
+            if (!cell || cell === lastHoveredCell) return;
 
-            // Only process if we entered a NEW cell (prevents thousands of redundant calls)
-            if (cell === lastHoveredCell) return;
+            // Store the pending update
+            pendingCell = cell;
+            pendingRow = parseInt(cell.dataset.row);
+            pendingCol = parseInt(cell.dataset.col);
 
-            console.log(`[DEBUG] mouseover: NEW cell entered (${cell.dataset.row}, ${cell.dataset.col})`);
-            lastHoveredCell = cell;
+            // Schedule update on next animation frame (throttles to 60fps max)
+            if (!rafPending) {
+                rafPending = true;
+                requestAnimationFrame(() => {
+                    rafPending = false;
+                    if (pendingCell === lastHoveredCell) return;
 
-            const row = parseInt(cell.dataset.row);
-            const col = parseInt(cell.dataset.col);
+                    lastHoveredCell = pendingCell;
 
-            if (fillMode) {
-                console.log('[DEBUG] Updating fill preview');
-                updateFillPreview(row, col);
-            } else if (isMouseDown) {
-                console.log('[DEBUG] Paint cell during drag');
-                paintCell(row, col);
+                    if (fillMode) {
+                        updateFillPreview(pendingRow, pendingCol);
+                    } else if (isMouseDown) {
+                        paintCell(pendingRow, pendingCol);
+                    }
+                });
             }
         });
 
