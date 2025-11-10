@@ -106,6 +106,7 @@ export class MapBuilder {
                         x: col * this.TILE_SIZE + 16,
                         y: row * this.TILE_SIZE + 16
                     });
+                    console.log(`👔 Employee spawn #${employeeSpawns.length - 1} at (${col * this.TILE_SIZE + 16}, ${row * this.TILE_SIZE + 16})`);
                 }
 
                 // Store patron spawn locations
@@ -114,6 +115,7 @@ export class MapBuilder {
                         x: col * this.TILE_SIZE + 16,
                         y: row * this.TILE_SIZE + 16
                     });
+                    console.log(`🍺 Patron spawn #${patronSpawns.length - 1} at (${col * this.TILE_SIZE + 16}, ${row * this.TILE_SIZE + 16})`);
                 }
 
                 // Store camera start location - not used in return value, but logged
@@ -253,8 +255,8 @@ export class MapBuilder {
         graphics.fillRect(x, y, this.TILE_SIZE, this.TILE_SIZE);
         graphics.setDepth(0);
 
-        // Add collision for walls, bar counter, and beer taps
-        if (tileType === TILES.WALL || tileType === TILES.BAR_COUNTER || tileType === TILES.BEER_TAP) {
+        // Add collision for walls, bar counter, beer taps, and cash registers
+        if (tileType === TILES.WALL || tileType === TILES.BAR_COUNTER || tileType === TILES.BEER_TAP || tileType === TILES.CASH_REGISTER) {
             const collider = this.walls.create(x + 16, y + 16, undefined);
             collider.setSize(32, 32);
             collider.setOrigin(0.5, 0.5);

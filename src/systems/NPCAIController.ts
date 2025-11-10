@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
+import type { GameScene } from '../scenes/GameScene';
 
 export class NPCAIController {
-    private scene: Phaser.Scene;
+    private scene: GameScene;
     private npcs: Phaser.Physics.Arcade.Group;
     private player: Phaser.Physics.Arcade.Sprite;
     private walls: Phaser.Physics.Arcade.StaticGroup;
@@ -22,7 +23,7 @@ export class NPCAIController {
     private MAP_ROWS: number;
 
     constructor(
-        scene: Phaser.Scene,
+        scene: GameScene,
         npcs: Phaser.Physics.Arcade.Group,
         player: Phaser.Physics.Arcade.Sprite,
         walls: Phaser.Physics.Arcade.StaticGroup,
@@ -1016,6 +1017,9 @@ export class NPCAIController {
                             target.setData('beerAmount', 100);
                             target.setData('waitStartTime', 0); // Reset wait timer!
 
+                            // Track beer poured
+                            this.scene.beerPoured();
+
                         // Show beer icon
                         if (target === this.player) {
                             this.playerBeerIcon.setVisible(true);
@@ -1131,9 +1135,12 @@ export class NPCAIController {
                         life: 1.5 // 1.5 seconds
                     });
 
+                    // Add cash to game state - $5 per drink
+                    this.scene.addCash(5);
+
                     // Immediately return to idle - sweeping code will handle facing
                     bartender.setData('state', 'idle');
-                    console.log('💰 Ka-ching! Sale registered, back to idle');
+                    console.log('💰 Ka-ching! +$5 - Sale registered, back to idle');
                 } else {
                     // Move toward register
                     bartender.setVelocity(

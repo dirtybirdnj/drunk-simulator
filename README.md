@@ -165,7 +165,9 @@ Open the editor from the main menu (desktop only) or run `map-editor.html` direc
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit pull requests.
+This is a paid game, but It's also a tool to teach people to get curious and start digging into code.  If you found this repo, I want to reward you with the ability to edit the code yourself.
+
+I can't pay you for your help, but contributions are welcome. Please feel free to submit a PR if you have an idea for a new feature.
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b my-feature`
@@ -217,8 +219,19 @@ If you build upon this project, please provide attribution to the original autho
 - **Report bugs**: [GitHub Issues](https://github.com/dirtybirdnj/drunk-simulator/issues)
 - **Source code**: [GitHub](https://github.com/dirtybirdnj/drunk-simulator)
 
+## Resources
+
+- **Emoji/ASCII Dictionary**: https://gist.github.com/dkdndes/a224555858f185f1662e3384c6a410d9
+
+## TODO / Known Issues
+
+- **Confetti animation disabled** - Temporarily removed from menu button clicks for performance optimization. Will re-enable after boot animation optimization is complete. (See `src/scenes/MenuButtonsScene.ts`)
+- **Boot animation performance** - Reduced from 6 to 4 beer emojis to improve boot time
+
 ## Credits
 
 Created by Mat Gilbert
 
-Built with Phaser 3, TypeScript, and Vite.
+Built with Phaser 3, TypeScript, and Vite. Claude helped too.
+
+🍺 Pour one out for the homies who ain't with us no mo 🫡

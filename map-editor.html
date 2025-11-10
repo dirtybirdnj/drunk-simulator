@@ -57,9 +57,12 @@
             height: 32px;
             border: 1px solid rgba(255,255,255,0.1);
             cursor: pointer;
+            /* Performance optimizations */
+            contain: layout style paint;
+            will-change: border-color;
         }
         .cell:hover {
-            border: 1px solid #fff;
+            border-color: #fff;
         }
         .palette {
             margin: 20px 0;
@@ -240,13 +243,13 @@
 
                 <div style="margin-bottom: 8px;">
                     <label style="font-size: 10px; display: block; margin-bottom: 3px;">Width (cols)</label>
-                    <input type="number" id="map-width" min="10" max="60" value="40"
+                    <input type="number" id="map-width" min="10" max="60" value="20"
                            style="width: 100%; padding: 5px; background: #444; border: 1px solid #666; color: #fff; border-radius: 3px;">
                 </div>
 
                 <div style="margin-bottom: 8px;">
                     <label style="font-size: 10px; display: block; margin-bottom: 3px;">Height (rows)</label>
-                    <input type="number" id="map-height" min="10" max="100" value="35"
+                    <input type="number" id="map-height" min="10" max="100" value="18"
                            style="width: 100%; padding: 5px; background: #444; border: 1px solid #666; color: #fff; border-radius: 3px;">
                 </div>
 
@@ -338,6 +341,9 @@
     </div>
 
     <script>
+        // ⚠️ CRITICAL: This is the SOURCE OF TRUTH for tile colors
+        // The mobile editor (EditorUIScene.ts / TileTypes.ts) must match these colors EXACTLY
+        // NEVER change these to match mobile - always update mobile to match premium
         const COLORS = {
             0: '#707070',  // Street
             1: '#D2B48C',  // Bar floor
@@ -349,16 +355,16 @@
             7: '#6B5F47',  // Stairs
             8: '#00ff00',  // Player start marker
             9: '#FFFF00',  // Beer tap (yellow)
-            10: '#ff0000', // Employee spawn marker
-            11: '#FFA500', // Patron spawn marker
-            12: '#00FFFF', // Camera start marker (cyan)
-            13: '#9B30FF', // POI - Point of Interest (purple)
+            10: '#ff0000', // Employee spawn marker (RED)
+            11: '#FFA500', // Patron spawn marker (ORANGE)
+            12: '#00FFFF', // Camera start marker (CYAN)
+            13: '#9B30FF', // POI - Point of Interest (PURPLE)
             14: '#2C5F2D', // Chair - dark forest green
             15: '#228B22'  // Cash Register - money green
         };
 
-        let COLS = 40;  // Default map size
-        let ROWS = 35;
+        let COLS = 20;  // Default map size - reduced for better initial performance
+        let ROWS = 18;
         let selectedType = 5;
         let grid = [];
         let isMouseDown = false;
@@ -368,16 +374,21 @@
         let fillMode = false;
         let fillStart = null;
         let fillPreview = null;
+        let historySavedThisStroke = false; // Track if history was saved for current paint stroke
+        let lastHoveredCell = null; // Track last cell to prevent redundant operations
 
         // Initialize grid with default size
         function initGrid() {
-            // Blank 40×35 grid - start designing!
-            grid = Array(35).fill(null).map(() => Array(40).fill(0));
+            // Blank 20×18 grid - start designing!
+            grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
         }
 
         function renderGrid() {
             const gridEl = document.getElementById('grid');
             gridEl.innerHTML = '';
+
+            // Clear cell cache since we're rebuilding
+            cellCache.clear();
 
             for (let row = 0; row < ROWS; row++) {
                 const rowEl = document.createElement('div');
@@ -390,29 +401,8 @@
                     cell.dataset.row = row;
                     cell.dataset.col = col;
 
-                    cell.addEventListener('mousedown', (e) => {
-                        if (fillMode) {
-                            e.preventDefault();
-                            handleFillClick(row, col);
-                        } else {
-                            isMouseDown = true;
-                            saveHistory(); // Save state before making changes
-                            paintCell(row, col);
-                        }
-                    });
-                    cell.addEventListener('mouseenter', () => {
-                        if (fillMode) {
-                            updateFillPreview(row, col);
-                        } else if (isMouseDown) {
-                            paintCell(row, col);
-                        }
-                    });
-                    cell.addEventListener('contextmenu', (e) => {
-                        if (fillMode) {
-                            e.preventDefault();
-                            cancelFillMode();
-                        }
-                    });
+                    // Cache the cell reference
+                    cellCache.set(`${row},${col}`, cell);
 
                     rowEl.appendChild(cell);
                 }
@@ -454,14 +444,26 @@
             }
         }
 
+        // Cache for cell DOM elements to avoid querySelector
+        let cellCache = new Map();
+
+        function getCellElement(row, col) {
+            const key = `${row},${col}`;
+            if (!cellCache.has(key)) {
+                const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                if (cell) cellCache.set(key, cell);
+            }
+            return cellCache.get(key);
+        }
+
         function paintCell(row, col) {
             // If painting a camera start tile (type 12), remove any existing one
             if (selectedType === 12) {
                 for (let r = 0; r < ROWS; r++) {
                     for (let c = 0; c < COLS; c++) {
                         if (grid[r][c] === 12) {
-                            grid[r][c] = 0; // Replace with street
-                            const oldCell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                            grid[r][c] = 0;
+                            const oldCell = getCellElement(r, c);
                             if (oldCell) {
                                 oldCell.style.background = COLORS[0];
                             }
@@ -471,14 +473,17 @@
             }
 
             grid[row][col] = selectedType;
-            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-            cell.style.background = COLORS[selectedType];
-            // Auto-update status
+            const cell = getCellElement(row, col);
+            if (cell) {
+                cell.style.background = COLORS[selectedType];
+            }
+            // Auto-update status (throttled via RAF below)
             document.getElementById('status').textContent = `Last edit: Row ${row}, Col ${col} → Type ${selectedType}`;
         }
 
         document.addEventListener('mouseup', () => {
             isMouseDown = false;
+            historySavedThisStroke = false; // Reset for next paint stroke
         });
 
         // Keyboard shortcuts
@@ -495,11 +500,18 @@
             }
         });
 
-        // Palette selection
-        document.querySelectorAll('.palette-tile').forEach(tile => {
+        // Palette selection - cache tiles and track selected tile
+        const paletteTiles = document.querySelectorAll('.palette-tile');
+        let currentSelectedTile = document.querySelector('.palette-tile.selected');
+
+        paletteTiles.forEach(tile => {
             tile.addEventListener('click', () => {
-                document.querySelectorAll('.palette-tile').forEach(t => t.classList.remove('selected'));
+                // Only remove from previously selected tile (not all tiles!)
+                if (currentSelectedTile) {
+                    currentSelectedTile.classList.remove('selected');
+                }
                 tile.classList.add('selected');
+                currentSelectedTile = tile;
                 selectedType = parseInt(tile.dataset.type);
             });
         });
@@ -1172,6 +1184,61 @@
         // Stop panning if mouse leaves container
         gridContainer.addEventListener('mouseleave', () => {
             isPanning = false;
+        });
+
+        // ============================================================
+        // EVENT DELEGATION FOR GRID (instead of 8400 individual listeners!)
+        // ============================================================
+
+        const gridEl = document.getElementById('grid');
+
+        // Handle mousedown on grid (replaces 2800 individual listeners)
+        gridEl.addEventListener('mousedown', (e) => {
+            const cell = e.target.closest('.cell');
+            if (!cell) return;
+
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+
+            if (fillMode) {
+                e.preventDefault();
+                handleFillClick(row, col);
+            } else {
+                isMouseDown = true;
+                // Only save history once per paint stroke
+                if (!historySavedThisStroke) {
+                    saveHistory();
+                    historySavedThisStroke = true;
+                }
+                paintCell(row, col);
+            }
+        });
+
+        // Handle mouseover - simple and fast
+        gridEl.addEventListener('mouseover', (e) => {
+            const cell = e.target.closest('.cell');
+            if (!cell || cell === lastHoveredCell) return;
+
+            lastHoveredCell = cell;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+
+            if (fillMode) {
+                updateFillPreview(row, col);
+            } else if (isMouseDown) {
+                paintCell(row, col);
+            }
+        });
+
+        // Handle contextmenu on grid (replaces 2800 individual listeners)
+        gridEl.addEventListener('contextmenu', (e) => {
+            const cell = e.target.closest('.cell');
+            if (!cell) return;
+
+            if (fillMode) {
+                e.preventDefault();
+                cancelFillMode();
+            }
         });
 
         // Initialize

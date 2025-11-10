@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import confetti from 'canvas-confetti';
+// import confetti from 'canvas-confetti'; // TODO: Re-enable confetti after performance optimization
+import { LevelSize, LEVEL_CONFIGS } from '../types/GameState';
 
 export class MenuButtonsScene extends Phaser.Scene {
     private selectedMap: string | null = null;
@@ -18,56 +19,80 @@ export class MenuButtonsScene extends Phaser.Scene {
         // Auto-select default map so game is ready to play immediately
         this.selectedMap = null; // null = default map
 
-        // Start button (always visible) - positioned below the title
-        const buttonSpacing = 170; // Consistent spacing between buttons
-        const startY = height / 2 + 150; // Moved up another inch (96px)
-        const startBg = this.add.rectangle(width / 2, startY, 900, 140, 0x228B22);
-        startBg.setStrokeStyle(6, 0xFFFFFF);
+        // Check which levels are unlocked
+        const unlockedLevels = this.getUnlockedLevels();
 
-        const startText = this.add.text(width / 2, startY, '🍻 START 🍹', {
-            fontSize: '60px',
-            color: '#FFD700',
-            fontFamily: 'Pixelify Sans, sans-serif',
-            fontStyle: '900'
-        });
-        startText.setOrigin(0.5);
+        // === LEVEL SELECTION (no header) ===
+        const sectionY = height / 2 + 100;
 
-        startBg.setInteractive({ useHandCursor: true });
-        startBg.on('pointerover', () => {
-            startBg.setFillStyle(0x32CD32);
-            startBg.setScale(1.05);
-            startText.setScale(1.05);
-        });
-        startBg.on('pointerout', () => {
-            startBg.setFillStyle(0x228B22);
-            startBg.setScale(1);
-            startText.setScale(1);
-        });
-        startBg.on('pointerdown', () => {
-            console.log(`🎮 Starting game with map: ${this.selectedMap || 'Default'}`);
+        // Level buttons (3 in a row)
+        const levelButtonWidth = 280;
+        const levelButtonHeight = 120;
+        const levelButtonSpacing = 20;
+        const totalWidth = (levelButtonWidth * 3) + (levelButtonSpacing * 2);
+        const startX = width / 2 - totalWidth / 2 + levelButtonWidth / 2;
+        const levelY = sectionY + 50;
 
-            // Trigger confetti celebration!
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 }
+        const levels = [
+            { size: LevelSize.MINI, label: 'Level 1', color: 0x10b981, requiredLevel: null },
+            { size: LevelSize.SMALL, label: 'Level 2', color: 0x3b82f6, requiredLevel: LevelSize.MINI },
+            { size: LevelSize.MEDIUM, label: 'Level 3', color: 0xf59e0b, requiredLevel: LevelSize.SMALL }
+        ];
+
+        levels.forEach((level, index) => {
+            const x = startX + (index * (levelButtonWidth + levelButtonSpacing));
+            const config = LEVEL_CONFIGS[level.size];
+            const isUnlocked = level.requiredLevel === null || unlockedLevels.includes(level.requiredLevel);
+
+            const bg = this.add.rectangle(x, levelY, levelButtonWidth, levelButtonHeight, isUnlocked ? level.color : 0x555555);
+            bg.setStrokeStyle(4, isUnlocked ? 0xFFFFFF : 0x888888);
+
+            const text = this.add.text(x, levelY - 15, isUnlocked ? level.label : '🔒 Locked', {
+                fontSize: '32px',
+                color: isUnlocked ? '#FFFFFF' : '#999999',
+                fontFamily: 'Pixelify Sans, sans-serif',
+                fontStyle: '700'
             });
+            text.setOrigin(0.5);
 
-            // Start game scene after a brief delay for confetti effect
-            this.time.delayedCall(500, () => {
-                // Stop boot animation scene before starting game
-                this.scene.stop('BootAnimationScene');
-                this.scene.start('GameScene', { selectedMap: this.selectedMap });
+            const subtext = this.add.text(x, levelY + 20, `$${config.cashThreshold}`, {
+                fontSize: '20px',
+                color: isUnlocked ? '#FFFF00' : '#666666',
+                fontFamily: 'Pixelify Sans, sans-serif'
             });
+            subtext.setOrigin(0.5);
+
+            if (isUnlocked) {
+                bg.setInteractive({ useHandCursor: true });
+                bg.on('pointerover', () => {
+                    bg.setScale(1.05);
+                    text.setScale(1.05);
+                    subtext.setScale(1.05);
+                });
+                bg.on('pointerout', () => {
+                    bg.setScale(1);
+                    text.setScale(1);
+                    subtext.setScale(1);
+                });
+                bg.on('pointerdown', () => {
+                    // Confetti disabled for performance - will re-enable after optimization
+                    this.scene.stop('BootAnimationScene');
+                    this.registry.set('selectedLevel', level.size);
+                    this.scene.start('GameScene', { selectedLevel: level.size });
+                });
+            }
         });
 
-        // SCAN button - positioned below START button (always visible)
-        const scanY = startY + buttonSpacing;
-        const scanBg = this.add.rectangle(width / 2, scanY, 900, 140, 0xFF6B35);
-        scanBg.setStrokeStyle(6, 0xFFFFFF);
+        // === BUTTONS ===
+        const buttonsY = levelY + 180;
 
-        const scanText = this.add.text(width / 2, scanY, '📸 SCAN', {
-            fontSize: '50px',
+        // SCAN button (moved up to replace custom map button)
+        const scanY = buttonsY;
+        const scanBg = this.add.rectangle(width / 2, scanY, 700, 100, 0xFF6B35);
+        scanBg.setStrokeStyle(4, 0xFFFFFF);
+
+        const scanText = this.add.text(width / 2, scanY, '📸 SCAN QR 📱', {
+            fontSize: '36px',
             color: '#FFD700',
             fontFamily: 'Pixelify Sans, sans-serif',
             fontStyle: '700'
@@ -89,16 +114,16 @@ export class MenuButtonsScene extends Phaser.Scene {
             this.startQRScanner();
         });
 
-        // Editor button (desktop only) - positioned below SCAN button
+        // Editor button (desktop only) - smaller size
         const isDesktop = window.innerWidth >= 1024;
         const editorEnabled = !(window as any).DISABLE_EDITOR;
         if (isDesktop && editorEnabled) {
-            const editorY = scanY + buttonSpacing;
-            const editorBg = this.add.rectangle(width / 2, editorY, 900, 140, 0x667eea);
-            editorBg.setStrokeStyle(6, 0xFFFFFF);
+            const editorY = scanY + 120;
+            const editorBg = this.add.rectangle(width / 2, editorY, 700, 80, 0x667eea);
+            editorBg.setStrokeStyle(4, 0xFFFFFF);
 
-            const editorText = this.add.text(width / 2, editorY, '🛠️ Editor', {
-                fontSize: '50px',
+            const editorText = this.add.text(width / 2, editorY, '🛠️ Map Editor', {
+                fontSize: '32px',
                 color: '#FFD700',
                 fontFamily: 'Pixelify Sans, sans-serif',
                 fontStyle: '700'
@@ -206,5 +231,16 @@ export class MenuButtonsScene extends Phaser.Scene {
             statusEl.textContent = '❌ Camera access denied';
             setTimeout(() => stopScanning(), 2000);
         });
+    }
+
+    private getUnlockedLevels(): LevelSize[] {
+        // Get completed levels from localStorage
+        const completedStr = localStorage.getItem('drunkSimCompletedLevels') || '[]';
+        try {
+            return JSON.parse(completedStr) as LevelSize[];
+        } catch (error) {
+            console.error('Failed to parse completed levels:', error);
+            return [];
+        }
     }
 }

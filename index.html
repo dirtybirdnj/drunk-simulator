@@ -125,9 +125,9 @@
     </div>
     <div id="game-container"></div>
 
-    <!-- Map Editor Container (iframe) -->
+    <!-- Map Editor Container (iframe) - lazy loaded -->
     <div id="editor-container">
-        <iframe id="editor-frame" src="map-editor.html"></iframe>
+        <!-- iframe will be created dynamically when needed -->
     </div>
 
     <!-- Camera Scanner Overlay -->
@@ -140,10 +140,67 @@
         <button id="close-camera" style="margin-top: 30px; padding: 15px 40px; background: #f00; color: #fff; border: none; border-radius: 5px; font-family: 'Pixelify Sans', sans-serif; font-size: 24px; cursor: pointer; font-weight: bold;">✕ Close</button>
     </div>
 
+    <!-- QR Code Display Modal -->
+    <div id="qr-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 20000; flex-direction: column; justify-content: center; align-items: center;">
+        <div style="background: #fff; padding: 30px; border-radius: 15px; text-align: center; max-width: 90%; max-height: 90vh; overflow: auto;">
+            <h2 style="font-family: 'Pixelify Sans', sans-serif; font-size: 32px; color: #333; margin-bottom: 20px;">📱 Share Your Map</h2>
+            <canvas id="qr-canvas" style="display: block; margin: 0 auto; max-width: 100%; height: auto;"></canvas>
+            <p style="font-family: 'Pixelify Sans', sans-serif; font-size: 18px; color: #666; margin-top: 20px;">Scan this QR code to load this map on another device</p>
+        </div>
+        <button id="close-qr-modal" style="margin-top: 30px; padding: 15px 40px; background: #2563eb; color: #fff; border: none; border-radius: 5px; font-family: 'Pixelify Sans', sans-serif; font-size: 24px; cursor: pointer; font-weight: bold;">✕ Close</button>
+    </div>
+
     <script>
+        // Track if editor has been loaded
+        let editorLoaded = false;
+
+        // Global function to show QR code modal
+        window.showQRModal = function(qrDataURL) {
+            const modal = document.getElementById('qr-modal');
+            const canvas = document.getElementById('qr-canvas');
+            const closeBtn = document.getElementById('close-qr-modal');
+
+            // Load QR code image onto canvas
+            const img = new Image();
+            img.onload = function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                modal.style.display = 'flex';
+            };
+            img.src = qrDataURL;
+
+            // Close button handler
+            closeBtn.onclick = function() {
+                modal.style.display = 'none';
+            };
+        };
+
         // Global functions to toggle between game and editor
         window.showEditor = function() {
-            document.getElementById('editor-container').style.display = 'block';
+            const container = document.getElementById('editor-container');
+
+            // Lazy-load the editor iframe only when first opened
+            if (!editorLoaded) {
+                console.log('📝 Loading map editor for the first time...');
+                const iframe = document.createElement('iframe');
+                iframe.id = 'editor-frame';
+                iframe.src = 'map-editor.html';
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                container.appendChild(iframe);
+                editorLoaded = true;
+            }
+
+            // CRITICAL: Pause Phaser game loop to stop GPU rendering
+            if (window.phaserGame && window.phaserGame.loop) {
+                window.phaserGame.loop.sleep();
+                console.log('⏸️ Paused Phaser game loop');
+            }
+
+            container.style.display = 'block';
             document.getElementById('game-container').style.display = 'none';
             document.getElementById('phone-wrapper').style.display = 'none';
         };
@@ -152,6 +209,12 @@
             document.getElementById('editor-container').style.display = 'none';
             document.getElementById('game-container').style.display = 'flex';
             document.getElementById('phone-wrapper').style.display = 'flex';
+
+            // CRITICAL: Resume Phaser game loop
+            if (window.phaserGame && window.phaserGame.loop) {
+                window.phaserGame.loop.wake();
+                console.log('▶️ Resumed Phaser game loop');
+            }
         };
 
         // Start game with map from editor

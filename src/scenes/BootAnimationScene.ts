@@ -12,74 +12,46 @@ export class BootAnimationScene extends Phaser.Scene {
         // Background color (dark)
         this.cameras.main.setBackgroundColor('#1a1a1a');
 
-        // First emoji - tropical drink 🍹 (far left)
-        const beer1 = this.add.text(width / 2 - 200, 372, '🍹', {
+        // First emoji - tropical drink 🍹 (far left) - moved down 1/2 inch
+        const beer1 = this.add.text(width / 2 - 200, 408, '🍹', {
             fontSize: '400px',
             align: 'center'
         });
         beer1.setOrigin(0.5);
         beer1.setAlpha(0.8);
+        beer1.setPadding(50); // Add padding to prevent clipping
 
-        // Add bokeh effect to beer1
-        const beer1Bokeh = beer1.postFX.addBokeh(0);
-
-        // Second emoji - party face 🥳 (left)
-        const beer2 = this.add.text(width / 2 - 100, 340, '🥳', {
+        // Second emoji - party face 🥳 (left) - moved down 1/2 inch
+        const beer2 = this.add.text(width / 2 - 100, 376, '🥳', {
             fontSize: '400px',
             align: 'center'
         });
         beer2.setOrigin(0.5);
         beer2.setAlpha(0.6);
+        beer2.setPadding(50); // Add padding to prevent clipping
 
-        // Add bokeh effect to beer2
-        const beer2Bokeh = beer2.postFX.addBokeh(0);
-
-        // Third emoji - vomiting face 🤮 (center-left)
-        const beer3 = this.add.text(width / 2 + 20, 390, '🤮', {
+        // Third emoji - vomiting face 🤮 (center-left) - moved down 1/2 inch
+        const beer3 = this.add.text(width / 2 + 20, 426, '🤮', {
             fontSize: '400px',
             align: 'center'
         });
         beer3.setOrigin(0.5);
         beer3.setAlpha(0.7);
+        beer3.setPadding(50); // Add padding to prevent clipping
 
-        // Add bokeh effect to beer3
-        const beer3Bokeh = beer3.postFX.addBokeh(0);
-
-        // Fourth emoji - beer mug 🍺 (center-right)
-        const beer4 = this.add.text(width / 2 + 140, 360, '🍺', {
+        // Fourth emoji - beer mug 🍺 (center-right) - moved down 1/2 inch
+        const beer4 = this.add.text(width / 2 + 140, 396, '🍺', {
             fontSize: '400px',
             align: 'center'
         });
         beer4.setOrigin(0.5);
         beer4.setAlpha(0.65);
+        beer4.setPadding(50); // Add padding to prevent clipping
 
-        // Add bokeh effect to beer4
-        const beer4Bokeh = beer4.postFX.addBokeh(0);
+        // Removed beer5 and beer6 to improve performance
 
-        // Fifth emoji - beer mug 🍺 (right)
-        const beer5 = this.add.text(width / 2 + 220, 380, '🍺', {
-            fontSize: '400px',
-            align: 'center'
-        });
-        beer5.setOrigin(0.5);
-        beer5.setAlpha(0.55);
-
-        // Add bokeh effect to beer5
-        const beer5Bokeh = beer5.postFX.addBokeh(0);
-
-        // Sixth emoji - beer mug 🍺 (far right)
-        const beer6 = this.add.text(width / 2 - 50, 350, '🍺', {
-            fontSize: '400px',
-            align: 'center'
-        });
-        beer6.setOrigin(0.5);
-        beer6.setAlpha(0.6);
-
-        // Add bokeh effect to beer6
-        const beer6Bokeh = beer6.postFX.addBokeh(0);
-
-        // Second "DRUNK" text - Open Sans (background layer)
-        const drunk2 = this.add.text(width / 2, 276, 'DRUNK', {
+        // Second "DRUNK" text - Open Sans (background layer) - moved down 1/2 inch
+        const drunk2 = this.add.text(width / 2, 312, 'DRUNK', {
             fontSize: '200px',
             color: '#FFD700',
             fontFamily: 'Open Sans, sans-serif',
@@ -89,11 +61,8 @@ export class BootAnimationScene extends Phaser.Scene {
         drunk2.setOrigin(0.5);
         drunk2.setAlpha(0.65);
 
-        // Add bokeh effect to drunk2
-        const drunk2Bokeh = drunk2.postFX.addBokeh(0);
-
-        // Third "DRUNK" text - Noto Sans Japanese (酔った = yotta = drunk)
-        const drunk3 = this.add.text(width / 2, 276, '酔った', {
+        // Third "DRUNK" text - Noto Sans Japanese (酔った = yotta = drunk) - moved down 1/2 inch
+        const drunk3 = this.add.text(width / 2, 312, '酔った', {
             fontSize: '200px',
             color: '#FFD700',
             fontFamily: 'Noto Sans JP, sans-serif',
@@ -103,11 +72,8 @@ export class BootAnimationScene extends Phaser.Scene {
         drunk3.setOrigin(0.5);
         drunk3.setAlpha(0.7);
 
-        // Add bokeh effect to drunk3
-        const drunk3Bokeh = drunk3.postFX.addBokeh(0);
-
-        // Fourth "DRUNK" text - Montserrat Thin (thinnest)
-        const drunk4 = this.add.text(width / 2, 276, 'DRUNK', {
+        // Fourth "DRUNK" text - Montserrat Thin (thinnest) - moved down 1/2 inch
+        const drunk4 = this.add.text(width / 2, 312, 'DRUNK', {
             fontSize: '200px',
             color: '#FFD700',
             fontFamily: 'Montserrat, sans-serif',
@@ -117,11 +83,8 @@ export class BootAnimationScene extends Phaser.Scene {
         drunk4.setOrigin(0.5);
         drunk4.setAlpha(0.6);
 
-        // Add bokeh effect to drunk4
-        const drunk4Bokeh = drunk4.postFX.addBokeh(0);
-
-        // "SIMULATOR" text - static below (moved down 2.5 inches = 240px)
-        const simulator = this.add.text(width / 2, 680, 'SIMULATOR', {
+        // "SIMULATOR" text - static below - moved down 1/2 inch
+        const simulator = this.add.text(width / 2, 644, 'SIMULATOR', {
             fontSize: '64px',
             color: '#FFD700',
             fontFamily: 'Pixelify Sans, sans-serif',
@@ -130,8 +93,8 @@ export class BootAnimationScene extends Phaser.Scene {
         });
         simulator.setOrigin(0.5);
 
-        // First "DRUNK" text - Roboto Black (TOP LAYER - no bokeh for readability)
-        const drunk1 = this.add.text(width / 2, 276, 'DRUNK', {
+        // First "DRUNK" text - Roboto Black (TOP LAYER - no bokeh for readability) - moved down 1/2 inch
+        const drunk1 = this.add.text(width / 2, 312, 'DRUNK', {
             fontSize: '200px',
             color: '#FFD700',
             fontFamily: 'Roboto, sans-serif',
@@ -144,9 +107,9 @@ export class BootAnimationScene extends Phaser.Scene {
         drunk1.setAlpha(1.0); // Full opacity for readability
         // NO bokeh effect on this layer for clarity
 
-        // Description text (moved down 3 inches = 288px total)
-        const description = this.add.text(width / 2, 876, 'A simulation game to experiment\nwith crowd dynamics by making a bar', {
-            fontSize: '36px',
+        // Description text (moved up 1/4 inch more, bigger font)
+        const description = this.add.text(width / 2, 804, 'A simulation game to experiment\nwith crowd dynamics by making a bar', {
+            fontSize: '42px',
             color: '#FFD700',
             fontFamily: 'Pixelify Sans, sans-serif',
             fontStyle: 'italic',
@@ -155,9 +118,9 @@ export class BootAnimationScene extends Phaser.Scene {
         });
         description.setOrigin(0.5);
 
-        // Credit text at bottom
-        const credits = this.add.text(width / 2, height - 30, 'A game by Mat Gilbert / mat@vtapi.co', {
-            fontSize: '28px',
+        // Credit text at bottom (moved up 1/2 inch, larger font)
+        const credits = this.add.text(width / 2, height - 66, 'A game by Mat Gilbert / mat@vtapi.co', {
+            fontSize: '36px',
             color: '#FFD700',
             fontFamily: 'Pixelify Sans, sans-serif',
             fontStyle: 'italic',
@@ -472,199 +435,11 @@ export class BootAnimationScene extends Phaser.Scene {
                         ease: 'Sine.easeInOut'
                     });
 
-                    // Fifth beer animation - delayed 3400ms
-                    this.time.delayedCall(3400, () => {
-                        // Wobble animation for fifth beer
-                        this.tweens.add({
-                            targets: beer5,
-                            angle: { from: -4, to: 4 },
-                            x: { from: width / 2 - 70, to: width / 2 + 70 },
-                            duration: 2900,
-                            yoyo: true,
-                            repeat: -1,
-                            ease: 'Sine.easeInOut'
-                        });
-
-                        // Fade for fifth beer
-                        this.tweens.add({
-                            targets: beer5,
-                            alpha: { from: 0.35, to: 0.85 },
-                            duration: 3100,
-                            yoyo: true,
-                            repeat: -1,
-                            ease: 'Sine.easeInOut'
-                        });
-
-                        // Grow/shrink for fifth beer
-                        this.tweens.add({
-                            targets: beer5,
-                            scaleX: { from: 0.92, to: 1.08 },
-                            scaleY: { from: 0.92, to: 1.08 },
-                            duration: 2700,
-                            yoyo: true,
-                            repeat: -1,
-                            ease: 'Sine.easeInOut'
-                        });
-
-                        // Sixth beer animation - delayed 4000ms
-                        this.time.delayedCall(4000, () => {
-                            // Wobble animation for sixth beer
-                            this.tweens.add({
-                                targets: beer6,
-                                angle: { from: -5, to: 5 },
-                                x: { from: width / 2 - 95, to: width / 2 + 95 },
-                                duration: 3400,
-                                yoyo: true,
-                                repeat: -1,
-                                ease: 'Sine.easeInOut'
-                            });
-
-                            // Vertical drift for sixth beer
-                            this.tweens.add({
-                                targets: beer6,
-                                y: { from: 372 - 30, to: 372 + 30 },
-                                duration: 2300,
-                                yoyo: true,
-                                repeat: -1,
-                                ease: 'Sine.easeInOut'
-                            });
-
-                            // Fade for sixth beer
-                            this.tweens.add({
-                                targets: beer6,
-                                alpha: { from: 0.45, to: 0.9 },
-                                duration: 2900,
-                                yoyo: true,
-                                repeat: -1,
-                                ease: 'Sine.easeInOut'
-                            });
-
-                            // Grow/shrink for sixth beer
-                            this.tweens.add({
-                                targets: beer6,
-                                scaleX: { from: 0.91, to: 1.09 },
-                                scaleY: { from: 0.91, to: 1.09 },
-                                duration: 2600,
-                                yoyo: true,
-                                repeat: -1,
-                                ease: 'Sine.easeInOut'
-                            });
-                        });
-                    });
+                    // Removed beer5 and beer6 animations for performance
                 });
             });
         });
 
-        // ============================================================
-        // BOKEH EFFECTS - Subtle fade in/out on different intervals for drunk effect
-        // ============================================================
-
-        // Beer 1 bokeh - fade every 3 seconds (subtle)
-        this.tweens.add({
-            targets: beer1Bokeh,
-            radius: { from: 0, to: 0.8 },
-            duration: 3000,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut'
-        });
-
-        // Beer 2 bokeh - fade every 3.5 seconds (offset start, subtle)
-        this.time.delayedCall(800, () => {
-            this.tweens.add({
-                targets: beer2Bokeh,
-                radius: { from: 0, to: 1.0 },
-                duration: 3500,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-            });
-        });
-
-        // Beer 3 bokeh - fade every 4 seconds (offset start, subtle)
-        this.time.delayedCall(1600, () => {
-            this.tweens.add({
-                targets: beer3Bokeh,
-                radius: { from: 0, to: 0.9 },
-                duration: 4000,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-            });
-        });
-
-        // Beer 4 bokeh - fade every 3.8 seconds (offset start, subtle)
-        this.time.delayedCall(2400, () => {
-            this.tweens.add({
-                targets: beer4Bokeh,
-                radius: { from: 0, to: 0.85 },
-                duration: 3800,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-            });
-        });
-
-        // Beer 5 bokeh - fade every 3.3 seconds (offset start, subtle)
-        this.time.delayedCall(3000, () => {
-            this.tweens.add({
-                targets: beer5Bokeh,
-                radius: { from: 0, to: 0.75 },
-                duration: 3300,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-            });
-        });
-
-        // Beer 6 bokeh - fade every 4.2 seconds (offset start, subtle)
-        this.time.delayedCall(3600, () => {
-            this.tweens.add({
-                targets: beer6Bokeh,
-                radius: { from: 0, to: 0.95 },
-                duration: 4200,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-            });
-        });
-
-        // Drunk 1 - NO bokeh effect for readability (top layer)
-
-        // Drunk 2 bokeh - fade every 2.8 seconds (offset start, subtle)
-        this.time.delayedCall(500, () => {
-            this.tweens.add({
-                targets: drunk2Bokeh,
-                radius: { from: 0, to: 0.7 },
-                duration: 2800,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-            });
-        });
-
-        // Drunk 3 bokeh - fade every 3.2 seconds (offset start, subtle)
-        this.time.delayedCall(1100, () => {
-            this.tweens.add({
-                targets: drunk3Bokeh,
-                radius: { from: 0, to: 0.75 },
-                duration: 3200,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-            });
-        });
-
-        // Drunk 4 bokeh - fade every 2.6 seconds (offset start, subtle)
-        this.time.delayedCall(1700, () => {
-            this.tweens.add({
-                targets: drunk4Bokeh,
-                radius: { from: 0, to: 0.65 },
-                duration: 2600,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-            });
-        });
+        // Bokeh effects removed for performance optimization
     }
 }
