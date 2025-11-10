@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { NPCData } from '../types/NPCData';
-import { decompressMap } from '../utils/mapCompression';
+import { decompressMap, compressMap } from '../utils/mapCompression';
 import { MapBuilder } from '../systems/MapBuilder';
 import { NPCSpawner } from '../systems/NPCSpawner';
 import { NPCAIController } from '../systems/NPCAIController';
@@ -8,6 +8,7 @@ import { VisualizationHelpers } from '../systems/VisualizationHelpers';
 import { LevelSize, LEVEL_CONFIGS, GameState } from '../types/GameState';
 import { EditorUI, EditorMode } from '../systems/EditorUI';
 import { TILES, COLORS } from '../systems/TileTypes';
+import confetti from 'canvas-confetti';
 
 export class GameScene extends Phaser.Scene {
     private player!: Phaser.Physics.Arcade.Sprite;
@@ -70,6 +71,7 @@ export class GameScene extends Phaser.Scene {
     private hoverPreview: Phaser.GameObjects.Rectangle | null = null; // Hover preview tile
     private lastHoverRow: number = -1;
     private lastHoverCol: number = -1;
+    private isDragging: boolean = false; // Track if user is dragging to paint
 
     constructor() {
         super({ key: 'GameScene' });
@@ -114,7 +116,21 @@ export class GameScene extends Phaser.Scene {
             }
         }
 
-        // Priority 3: Create blank slate (all street tiles) for editor
+        // Priority 3: Check for previously completed level map
+        const levelKey = `drunkSimLevel_${selectedLevel}`;
+        const savedLevelMap = localStorage.getItem(levelKey);
+        if (savedLevelMap) {
+            try {
+                const decompressed = decompressMap(savedLevelMap);
+                this.selectedMapData = decompressed.grid;
+                console.log(`🏆 Loaded saved map for completed level ${selectedLevel}`);
+                return;
+            } catch (error) {
+                console.error('❌ Failed to load saved level map:', error);
+            }
+        }
+
+        // Priority 4: Create blank slate (all street tiles) for editor
         const levelConfig = LEVEL_CONFIGS[selectedLevel];
 
         // Start with completely blank grid (all STREET tiles = 0)
@@ -254,6 +270,10 @@ export class GameScene extends Phaser.Scene {
 
         console.log(`📷 Camera setup complete - player at (${this.player.x}, ${this.player.y})`);
 
+        // Set physics world bounds to map size
+        this.physics.world.setBounds(0, 0, mapPixelWidth, mapPixelHeight);
+        console.log(`🌍 Physics world bounds set to (${mapPixelWidth}×${mapPixelHeight})`);
+
         // Collision
         this.physics.add.collider(this.player, this.walls);
 
@@ -377,9 +397,10 @@ export class GameScene extends Phaser.Scene {
         // Pause physics initially - will unpause when player clicks START
         this.physics.pause();
 
-        // Enable grid editing
+        // Enable grid editing with drag support
         this.input.on('pointerdown', this.handleGridClick, this);
         this.input.on('pointermove', this.handleGridHover, this);
+        this.input.on('pointerup', this.handlePointerUp, this);
 
         // Create grid overlay for EDIT mode
         this.createGridOverlay();
@@ -405,6 +426,10 @@ export class GameScene extends Phaser.Scene {
         // Don't update player movement in EDIT mode
         if (inEditMode) {
             this.player.setVelocity(0);
+            // Clear vision cone graphics in EDIT mode
+            if (this.visionConeGraphics) {
+                this.visionConeGraphics.clear();
+            }
             return;
         }
 
@@ -552,6 +577,61 @@ export class GameScene extends Phaser.Scene {
         this.gameState.cashEarned += amount;
         const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];
         this.cashText.setText(`$${this.gameState.cashEarned} / $${levelConfig.cashThreshold}`);
+
+        // Check if level is complete
+        if (!this.gameState.levelComplete && this.gameState.cashEarned >= levelConfig.cashThreshold) {
+            this.gameState.levelComplete = true;
+            this.handleLevelComplete();
+        }
+    }
+
+    private handleLevelComplete(): void {
+        console.log('🎉 LEVEL COMPLETE!');
+
+        // Stop patron spawning
+        if (this.patronSpawnTimer) {
+            this.patronSpawnTimer.remove();
+        }
+
+        // Pause physics
+        this.physics.pause();
+
+        // Save the completed map for this level
+        const compressed = compressMap(this.currentGrid);
+        const levelKey = `drunkSimLevel_${this.gameState.currentLevel}`;
+        localStorage.setItem(levelKey, compressed);
+        console.log(`💾 Saved level ${this.gameState.currentLevel} map to ${levelKey}`);
+
+        // Mark level as completed
+        const completedLevels = this.getCompletedLevels();
+        if (!completedLevels.includes(this.gameState.currentLevel)) {
+            completedLevels.push(this.gameState.currentLevel);
+            localStorage.setItem('drunkSimCompletedLevels', JSON.stringify(completedLevels));
+        }
+
+        // Trigger confetti celebration!
+        confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 }
+        });
+
+        // Show completion message and return to menu after delay
+        this.time.delayedCall(2500, () => {
+            this.scene.stop('EditorUIScene');
+            this.scene.stop('BootAnimationScene');
+            this.scene.start('MenuButtonsScene');
+        });
+    }
+
+    private getCompletedLevels(): LevelSize[] {
+        const completedStr = localStorage.getItem('drunkSimCompletedLevels') || '[]';
+        try {
+            return JSON.parse(completedStr) as LevelSize[];
+        } catch (error) {
+            console.error('Failed to parse completed levels:', error);
+            return [];
+        }
     }
 
     // Public method for NPCAIController to track beers poured
@@ -759,6 +839,13 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
+        // If dragging and not in fill mode, paint tiles while moving
+        if (this.isDragging && !editorUI.isFillMode()) {
+            const selectedTile = editorUI.getSelectedTile();
+            this.placeTileAt(pointer.worldX, pointer.worldY, selectedTile);
+            return; // Don't show hover preview while dragging
+        }
+
         // Check if in fill mode
         if (editorUI.isFillMode()) {
             // Let EditorUI handle fill preview (rectangular region)
@@ -829,10 +916,19 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
-        // In EDIT mode - place single tile
+        // In EDIT mode - start drag painting
+        this.isDragging = true;
         const selectedTile = editorUI.getSelectedTile();
-        console.log(`🎨 Placing tile ${selectedTile} at (${pointer.worldX}, ${pointer.worldY})`);
+        console.log(`🎨 Starting drag paint with tile ${selectedTile}`);
         this.placeTileAt(pointer.worldX, pointer.worldY, selectedTile);
+    }
+
+    private handlePointerUp(pointer: Phaser.Input.Pointer): void {
+        // Stop dragging when pointer is released
+        if (this.isDragging) {
+            console.log('🖱️ Drag paint ended');
+            this.isDragging = false;
+        }
     }
 
     public placeTileAt(worldX: number, worldY: number, tileType: number, trackEdit: boolean = true): void {
@@ -870,11 +966,17 @@ export class GameScene extends Phaser.Scene {
         return this.TILE_SIZE;
     }
 
+    public getCurrentGrid(): number[][] {
+        return this.currentGrid;
+    }
+
     private updateTileVisual(row: number, col: number, tileType: number): void {
         const key = `${row},${col}`;
         const existing = this.gridTiles.get(key);
 
-        const color = COLORS[tileType] !== undefined ? COLORS[tileType] : 0xFF00FF;
+        // Get display tile type (converts markers to base tiles in ACTIVE mode)
+        const displayTile = this.getDisplayTileType(tileType);
+        const color = COLORS[displayTile] !== undefined ? COLORS[displayTile] : 0xFF00FF;
 
         if (existing) {
             // Update existing tile color
@@ -894,6 +996,23 @@ export class GameScene extends Phaser.Scene {
             this.gridTiles.set(key, tile);
             console.log(`🎨 Created new tile visual at (${row}, ${col}) - type ${tileType}`);
         }
+    }
+
+    private getDisplayTileType(tileType: number): number {
+        // In EDIT mode, show actual tile types (including markers)
+        const editorUI = this.scene.get('EditorUIScene') as any;
+        if (editorUI && editorUI.getMode && editorUI.getMode() === 'EDIT') {
+            return tileType;
+        }
+
+        // In ACTIVE mode, convert special markers to their base tiles
+        if (tileType === TILES.PLAYER_START) return TILES.STREET;
+        if (tileType === TILES.EMPLOYEE_SPAWN) return TILES.STAFF_ZONE;
+        if (tileType === TILES.PATRON_SPAWN) return TILES.STREET;
+        if (tileType === TILES.CAMERA_START) return TILES.STREET;
+        // POI tiles remain visible during gameplay so patrons can target them
+
+        return tileType;
     }
 
     private createGridOverlay(): void {
@@ -948,6 +1067,203 @@ export class GameScene extends Phaser.Scene {
         // Resume physics
         this.physics.resume();
 
+        // Make sure player is visible and positioned
+        if (this.player) {
+            this.player.setVisible(true);
+            this.player.setActive(true);
+            this.player.setVelocity(0, 0);
+            console.log(`👤 Player visible at (${this.player.x}, ${this.player.y})`);
+        }
+
+        // Re-scan currentGrid for spawn locations (user may have edited map)
+        this.employeeSpawns = [];
+        this.patronSpawns = [];
+        let playerStartX = this.player.x;
+        let playerStartY = this.player.y;
+        let foundPlayerStart = false;
+
+        for (let row = 0; row < this.currentGrid.length; row++) {
+            for (let col = 0; col < this.currentGrid[row].length; col++) {
+                const tileType = this.currentGrid[row][col];
+
+                if (tileType === TILES.PLAYER_START) {
+                    playerStartX = col * this.TILE_SIZE + 16;
+                    playerStartY = row * this.TILE_SIZE + 16;
+                    foundPlayerStart = true;
+                    console.log(`🟢 Found player start at (${playerStartX}, ${playerStartY})`);
+                }
+
+                if (tileType === TILES.EMPLOYEE_SPAWN) {
+                    this.employeeSpawns.push({
+                        x: col * this.TILE_SIZE + 16,
+                        y: row * this.TILE_SIZE + 16
+                    });
+                    console.log(`👔 Found employee spawn at (${col * this.TILE_SIZE + 16}, ${row * this.TILE_SIZE + 16})`);
+                }
+
+                if (tileType === TILES.PATRON_SPAWN) {
+                    this.patronSpawns.push({
+                        x: col * this.TILE_SIZE + 16,
+                        y: row * this.TILE_SIZE + 16
+                    });
+                    console.log(`🍺 Found patron spawn at (${col * this.TILE_SIZE + 16}, ${row * this.TILE_SIZE + 16})`);
+                }
+            }
+        }
+
+        // Reposition player to player start marker
+        if (foundPlayerStart) {
+            this.player.setPosition(playerStartX, playerStartY);
+            console.log(`👤 Repositioned player to (${playerStartX}, ${playerStartY})`);
+        } else {
+            console.warn('⚠️ No player start marker found! Player staying at current position.');
+        }
+
+        console.log(`📍 Found ${this.employeeSpawns.length} employee spawns and ${this.patronSpawns.length} patron spawns`);
+
+        // Rebuild beer taps, POIs, and bar service zones (user may have edited map)
+        this.beerTaps = [];
+        this.pois = [];
+        this.barServiceZones = [];
+
+        for (let row = 0; row < this.currentGrid.length; row++) {
+            for (let col = 0; col < this.currentGrid[row].length; col++) {
+                const tileType = this.currentGrid[row][col];
+
+                // Store beer tap locations
+                if (tileType === TILES.BEER_TAP) {
+                    this.beerTaps.push({
+                        x: col * this.TILE_SIZE + 16,
+                        y: row * this.TILE_SIZE + 16
+                    });
+                }
+
+                // Store POI locations
+                if (tileType === TILES.POI) {
+                    this.pois.push({
+                        x: col * this.TILE_SIZE + 16,
+                        y: row * this.TILE_SIZE + 16
+                    });
+                    console.log(`🎯 POI at (${col * this.TILE_SIZE + 16}, ${row * this.TILE_SIZE + 16})`);
+                }
+
+                // Detect bar counters and create service zones
+                if (tileType === TILES.BAR_COUNTER) {
+                    // Check if there's a floor tile to the left (service zone)
+                    if (col > 0 && this.currentGrid[row][col - 1] === TILES.BAR_FLOOR) {
+                        this.barServiceZones.push({
+                            x: (col - 1) * this.TILE_SIZE,
+                            y: row * this.TILE_SIZE,
+                            width: this.TILE_SIZE,
+                            height: this.TILE_SIZE,
+                            tapIndex: -1
+                        });
+                    }
+                    // Check if there's a floor tile to the right
+                    if (col < this.currentGrid[0].length - 1 && this.currentGrid[row][col + 1] === TILES.BAR_FLOOR) {
+                        this.barServiceZones.push({
+                            x: (col + 1) * this.TILE_SIZE,
+                            y: row * this.TILE_SIZE,
+                            width: this.TILE_SIZE,
+                            height: this.TILE_SIZE,
+                            tapIndex: -1
+                        });
+                    }
+                    // Check if there's a floor tile above
+                    if (row > 0 && this.currentGrid[row - 1][col] === TILES.BAR_FLOOR) {
+                        this.barServiceZones.push({
+                            x: col * this.TILE_SIZE,
+                            y: (row - 1) * this.TILE_SIZE,
+                            width: this.TILE_SIZE,
+                            height: this.TILE_SIZE,
+                            tapIndex: -1
+                        });
+                    }
+                    // Check if there's a floor tile below
+                    if (row < this.currentGrid.length - 1 && this.currentGrid[row + 1][col] === TILES.BAR_FLOOR) {
+                        this.barServiceZones.push({
+                            x: col * this.TILE_SIZE,
+                            y: (row + 1) * this.TILE_SIZE,
+                            width: this.TILE_SIZE,
+                            height: this.TILE_SIZE,
+                            tapIndex: -1
+                        });
+                    }
+                }
+            }
+        }
+
+        // Assign each service zone to its nearest beer tap
+        this.barServiceZones.forEach((zone) => {
+            let closestTapIndex = 0;
+            let closestDist = Infinity;
+
+            this.beerTaps.forEach((tap, index) => {
+                const dx = (zone.x + zone.width / 2) - tap.x;
+                const dy = (zone.y + zone.height / 2) - tap.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < closestDist) {
+                    closestDist = dist;
+                    closestTapIndex = index;
+                }
+            });
+
+            zone.tapIndex = closestTapIndex;
+        });
+
+        console.log(`🍺 Found ${this.beerTaps.length} beer taps, ${this.pois.length} POIs, and ${this.barServiceZones.length} service zones`);
+
+        // Debug: Log each service zone location
+        this.barServiceZones.forEach((zone, i) => {
+            const gridX = zone.x / this.TILE_SIZE;
+            const gridY = zone.y / this.TILE_SIZE;
+            console.log(`  Service Zone ${i}: Grid(${gridX},${gridY}) Pixel(${zone.x},${zone.y}) → Tap ${zone.tapIndex}`);
+        });
+
+        // Visualize service zones with semi-transparent overlay
+        this.barServiceZones.forEach((zone) => {
+            const serviceVisual = this.add.rectangle(
+                zone.x + this.TILE_SIZE / 2,
+                zone.y + this.TILE_SIZE / 2,
+                this.TILE_SIZE,
+                this.TILE_SIZE,
+                0x00FF00,  // Green color
+                0.3        // 30% opacity
+            );
+            serviceVisual.setDepth(2); // Above tiles but below NPCs
+            console.log(`🟢 Created service zone visual at (${zone.x}, ${zone.y})`);
+        });
+
+        // Rebuild collision walls (user may have edited map)
+        this.walls.clear(true, true);
+        for (let row = 0; row < this.currentGrid.length; row++) {
+            for (let col = 0; col < this.currentGrid[row].length; col++) {
+                const tileType = this.currentGrid[row][col];
+
+                // Add collision for walls, bar counter, beer taps, and cash registers
+                if (tileType === TILES.WALL || tileType === TILES.BAR_COUNTER ||
+                    tileType === TILES.BEER_TAP || tileType === TILES.CASH_REGISTER) {
+                    const x = col * this.TILE_SIZE;
+                    const y = row * this.TILE_SIZE;
+                    const collider = this.walls.create(x + 16, y + 16, undefined);
+                    collider.setSize(32, 32);
+                    collider.setOrigin(0.5, 0.5);
+                    collider.refreshBody();
+                    collider.setVisible(false);
+                }
+            }
+        }
+        console.log('🧱 Rebuilt collision walls');
+
+        // Refresh all tile visuals to hide markers in ACTIVE mode
+        for (let row = 0; row < this.currentGrid.length; row++) {
+            for (let col = 0; col < this.currentGrid[row].length; col++) {
+                this.updateTileVisual(row, col, this.currentGrid[row][col]);
+            }
+        }
+        console.log('🎨 Refreshed tile visuals for ACTIVE mode');
+
         // Spawn employees at marked locations
         this.npcSpawner.createNPCs(this.employeeSpawns);
 
@@ -993,6 +1309,14 @@ export class GameScene extends Phaser.Scene {
 
         // Show grid overlay again for editing
         this.showGridOverlay();
+
+        // Refresh all tile visuals to show markers in EDIT mode
+        for (let row = 0; row < this.currentGrid.length; row++) {
+            for (let col = 0; col < this.currentGrid[row].length; col++) {
+                this.updateTileVisual(row, col, this.currentGrid[row][col]);
+            }
+        }
+        console.log('🎨 Refreshed tile visuals for EDIT mode');
 
         // Update UI
         const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];

@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { TILES, COLORS } from '../systems/TileTypes';
 import type { GameScene } from './GameScene';
+import { compressMap } from '../utils/mapCompression';
+import QRCode from 'qrcode';
 
 export enum EditorMode {
     EDIT = 'EDIT',     // Can place tiles, game paused
@@ -9,7 +11,7 @@ export enum EditorMode {
 
 export class EditorUIScene extends Phaser.Scene {
     private mode: EditorMode = EditorMode.EDIT;
-    private selectedTile: number = TILES.BAR_FLOOR;
+    private selectedTile: number = TILES.WALL; // Default to wall for easier building
 
     // UI elements
     private bottomBar!: Phaser.GameObjects.Container;
@@ -18,6 +20,7 @@ export class EditorUIScene extends Phaser.Scene {
     private undoButton!: Phaser.GameObjects.Container;
     private clearAllButton!: Phaser.GameObjects.Container;
     private fillButton!: Phaser.GameObjects.Container;
+    private qrCodeButton!: Phaser.GameObjects.Container;
     private playbackControls!: Phaser.GameObjects.Container;
     private selectedTileText!: Phaser.GameObjects.Text;
 
@@ -34,10 +37,16 @@ export class EditorUIScene extends Phaser.Scene {
     private fillStartCol: number = -1;
     private fillPreview: Phaser.GameObjects.Rectangle | null = null;
 
+    // Double-tap detection for fill mode toggle
+    private lastTappedTile: number = -1;
+    private lastTapTime: number = 0;
+    private doubleTapDelay: number = 300; // milliseconds
+
     // Tile palette for free game (limited set)
     private readonly FREE_TILES = [
         TILES.STREET,          // Grey
         TILES.BAR_FLOOR,       // Tan
+        TILES.PATIO,           // Light grey - outdoor smoking area
         TILES.WALL,            // Brown
         TILES.BAR_COUNTER,     // Dark brown
         TILES.BEER_TAP,        // Yellow
@@ -94,6 +103,7 @@ export class EditorUIScene extends Phaser.Scene {
 
         // Create UI elements
         this.createTilePalette();
+        this.createQRCodeButton();
         this.createFillButton();
         this.createUndoButton();
         this.createClearAllButton();
@@ -137,7 +147,7 @@ export class EditorUIScene extends Phaser.Scene {
     }
 
     private createTilePalette(): void {
-        const startX = 66; // Moved right another 1/4 inch (18px) for centering
+        const startX = 41; // Moved left another 8px
         const tileSize = 60;
         const spacing = 8;
         const y = -27; // Moved up another 1/8 inch (9px) total 3/8 inch up
@@ -164,10 +174,29 @@ export class EditorUIScene extends Phaser.Scene {
             // Store reference
             this.paletteTiles.set(tileType, bg);
 
-            // Click handler
+            // Click handler with double-tap detection for fill mode
             bg.on('pointerdown', () => {
                 if (this.mode === EditorMode.EDIT) {
-                    this.selectTile(tileType);
+                    const now = Date.now();
+                    const timeSinceLastTap = now - this.lastTapTime;
+
+                    // Check if this is a double-tap on the same tile
+                    if (this.lastTappedTile === tileType && timeSinceLastTap < this.doubleTapDelay) {
+                        // Double-tap detected - toggle fill mode
+                        this.toggleFillMode();
+                        console.log(`🎨 Double-tap on ${this.getTileName(tileType)} - Fill mode: ${this.fillMode ? 'ON' : 'OFF'}`);
+                        this.lastTappedTile = -1; // Reset to prevent triple-tap
+                        this.lastTapTime = 0;
+                    } else {
+                        // Single tap - select tile and turn off fill mode if tapping different tile
+                        if (this.lastTappedTile !== tileType && this.fillMode) {
+                            this.toggleFillMode(); // Turn off fill mode when selecting different tile
+                            console.log('🎨 Different tile selected - Fill mode OFF');
+                        }
+                        this.selectTile(tileType);
+                        this.lastTappedTile = tileType;
+                        this.lastTapTime = now;
+                    }
                 }
             });
 
@@ -186,14 +215,43 @@ export class EditorUIScene extends Phaser.Scene {
             this.bottomBar.add([bg, tile]);
         });
 
-        // Select first tile by default
-        this.selectTile(this.FREE_TILES[0]);
-        console.log('  → Created', this.paletteTiles.size, 'palette tiles');
+        // Select WALL tile by default (TILES.WALL)
+        this.selectTile(TILES.WALL);
+        console.log('  → Created', this.paletteTiles.size, 'palette tiles (default: WALL)');
+    }
+
+    private createQRCodeButton(): void {
+        const width = this.cameras.main.width;
+        const x = width - 860; // Leftmost button in horizontal layout
+        const y = 50; // Below palette
+
+        this.qrCodeButton = this.add.container(x, y);
+
+        const bg = this.add.rectangle(0, 0, 140, 50, 0x2563eb); // Blue color
+        bg.setStrokeStyle(3, 0xFFFFFF);
+        bg.setInteractive({ useHandCursor: true });
+
+        const text = this.add.text(0, 0, '📱 QR CODE', {
+            fontSize: '18px',
+            color: '#FFFFFF',
+            fontFamily: 'Arial',
+            fontStyle: 'bold'
+        });
+        text.setOrigin(0.5);
+
+        bg.on('pointerdown', () => this.showQRCode());
+        bg.on('pointerover', () => bg.setFillStyle(0x1d4ed8)); // Darker blue
+        bg.on('pointerout', () => bg.setFillStyle(0x2563eb)); // Back to normal blue
+
+        this.qrCodeButton.add([bg, text]);
+        this.bottomBar.add(this.qrCodeButton);
+
+        console.log('  → Created QR CODE button (leftmost)');
     }
 
     private createFillButton(): void {
         const width = this.cameras.main.width;
-        const x = width - 700; // Leftmost button in horizontal layout
+        const x = width - 700; // Second button in horizontal layout
         const y = 50; // Below palette
 
         this.fillButton = this.add.container(x, y);
@@ -346,33 +404,43 @@ export class EditorUIScene extends Phaser.Scene {
 
     private createPlaybackControls(): void {
         const width = this.cameras.main.width;
-        const centerX = width - 300;
-        const y = 0;
+        const y = 50; // Same y as other buttons
 
-        this.playbackControls = this.add.container(centerX, y);
+        // Create individual button containers instead of one grouped container
+        // This allows us to position them individually in a horizontal line
+        this.playbackControls = this.add.container(0, 0);
         this.playbackControls.setVisible(false);
 
         const buttonData = [
-            { x: -120, label: '🐌 Slow', scale: 0.5 },
-            { x: -40, label: '⏸️ Pause', scale: 1.0 },
-            { x: 40, label: '⏩ Fast', scale: 2.0 },
-            { x: 120, label: '🔄 Restart', scale: 0 }
+            { x: width - 700, label: '🐌 Slow', scale: 0.5 },
+            { x: width - 560, label: '⏸️ Pause', scale: 1.0 },
+            { x: width - 420, label: '⏩ Fast', scale: 2.0 },
+            { x: width - 280, label: '🔄 Restart', scale: 0 },
+            { x: width - 140, label: '⏹️ Stop', scale: -1 } // Stop returns to EDIT mode
         ];
 
         buttonData.forEach(({ x, label, scale }) => {
-            const bg = this.add.rectangle(x, 0, 70, 50, 0x3b82f6);
-            bg.setStrokeStyle(2, 0xFFFFFF);
+            const container = this.add.container(x, y);
+
+            const bg = this.add.rectangle(0, 0, 120, 50, 0x3b82f6);
+            bg.setStrokeStyle(3, 0xFFFFFF);
             bg.setInteractive({ useHandCursor: true });
 
-            const text = this.add.text(x, 0, label, {
-                fontSize: '16px',
+            const text = this.add.text(0, 0, label, {
+                fontSize: '18px',
                 color: '#FFFFFF',
-                fontFamily: 'Arial'
+                fontFamily: 'Arial',
+                fontStyle: 'bold'
             });
             text.setOrigin(0.5);
 
             bg.on('pointerdown', () => {
-                if (scale === 0) {
+                if (scale === -1) {
+                    // Stop button - return to EDIT mode
+                    this.setMode(EditorMode.EDIT);
+                    const gameScene = this.scene.get('GameScene') as GameScene;
+                    gameScene.restartLevel();
+                } else if (scale === 0) {
                     this.restartEditor();
                 } else {
                     this.setTimeScale(scale);
@@ -382,11 +450,12 @@ export class EditorUIScene extends Phaser.Scene {
             bg.on('pointerover', () => bg.setFillStyle(0x2563eb));
             bg.on('pointerout', () => bg.setFillStyle(0x3b82f6));
 
-            this.playbackControls.add([bg, text]);
+            container.add([bg, text]);
+            this.playbackControls.add(container);
         });
 
         this.bottomBar.add(this.playbackControls);
-        console.log('  → Created playback controls');
+        console.log('  → Created playback controls (5 buttons in horizontal line)');
     }
 
     private selectTile(tileType: number): void {
@@ -405,6 +474,7 @@ export class EditorUIScene extends Phaser.Scene {
         const names: { [key: number]: string } = {
             [TILES.STREET]: 'Street',
             [TILES.BAR_FLOOR]: 'Bar Floor',
+            [TILES.PATIO]: 'Patio',
             [TILES.WALL]: 'Wall',
             [TILES.BAR_COUNTER]: 'Counter',
             [TILES.BEER_TAP]: 'Beer Tap',
@@ -434,19 +504,27 @@ export class EditorUIScene extends Phaser.Scene {
         this.mode = mode;
 
         if (mode === EditorMode.EDIT) {
+            // Show edit mode UI
             this.paletteTiles.forEach(bg => bg.setVisible(true));
+            this.selectedTileText.setVisible(true);
+            this.qrCodeButton.setVisible(true);
             this.fillButton.setVisible(true);
             this.undoButton.setVisible(true);
             this.clearAllButton.setVisible(true);
+            this.modeButton.setVisible(true);
             this.playbackControls.setVisible(false);
 
             const modeBtn = this.modeButton.getAt(1) as Phaser.GameObjects.Text;
             modeBtn.setText('▶️ START');
         } else {
+            // Hide edit mode UI, show playback controls
             this.paletteTiles.forEach(bg => bg.setVisible(false));
+            this.selectedTileText.setVisible(false);
+            this.qrCodeButton.setVisible(false);
             this.fillButton.setVisible(false);
             this.undoButton.setVisible(false);
             this.clearAllButton.setVisible(false);
+            this.modeButton.setVisible(false);
             this.playbackControls.setVisible(true);
         }
     }
@@ -477,6 +555,46 @@ export class EditorUIScene extends Phaser.Scene {
                 this.fillPreview = null;
             }
             console.log('🎨 Fill mode DISABLED');
+        }
+    }
+
+    private async showQRCode(): Promise<void> {
+        if (this.mode !== EditorMode.EDIT) return;
+
+        try {
+            console.log('📱 Generating QR code for current map...');
+
+            // Get current grid from GameScene
+            const gameScene = this.scene.get('GameScene') as GameScene;
+            const grid = gameScene.getCurrentGrid();
+
+            if (!grid || grid.length === 0) {
+                console.error('❌ No grid data available');
+                return;
+            }
+
+            // Compress the map
+            const compressed = compressMap(grid);
+            console.log(`✅ Compressed map: ${compressed.length} characters`);
+
+            // Generate QR code as data URL
+            const qrDataURL = await QRCode.toDataURL(compressed, {
+                errorCorrectionLevel: 'L', // Low error correction for max data capacity
+                margin: 2,
+                width: 512,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            });
+
+            console.log('✅ QR code generated successfully');
+
+            // Show the QR code modal via global function
+            (window as any).showQRModal(qrDataURL);
+
+        } catch (error) {
+            console.error('❌ Failed to generate QR code:', error);
         }
     }
 
