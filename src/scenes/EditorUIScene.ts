@@ -48,8 +48,8 @@ export class EditorUIScene extends Phaser.Scene {
         console.log('🎨 Creating EditorUIScene overlay');
         console.log('  → Scene size:', width, 'x', height);
 
-        // Create bottom bar (100px tall, at bottom of screen)
-        const barHeight = 100;
+        // Create bottom bar (140px tall, at bottom of screen)
+        const barHeight = 140;
         const barY = height - (barHeight / 2);
 
         this.bottomBar = this.add.container(0, barY);
@@ -61,6 +61,9 @@ export class EditorUIScene extends Phaser.Scene {
 
         console.log('  → Bottom bar at y:', barY);
 
+        // Create top stats bar
+        this.createStatsBar();
+
         // Create UI elements
         this.createTilePalette();
         this.createUndoButton();
@@ -71,10 +74,42 @@ export class EditorUIScene extends Phaser.Scene {
         this.setMode(EditorMode.EDIT);
     }
 
+    private createStatsBar(): void {
+        const width = this.cameras.main.width;
+        const barHeight = 60;
+        const barY = barHeight / 2;
+
+        // Semi-transparent black background at top
+        const bg = this.add.rectangle(width / 2, barY, width, barHeight, 0x000000, 0.8);
+        bg.setDepth(10000);
+
+        // TIME label and value
+        const timeLabel = this.add.text(20, barY, 'TIME: 00:00', {
+            fontSize: '24px',
+            color: '#FFFFFF',
+            fontFamily: 'Arial',
+            fontStyle: 'bold'
+        });
+        timeLabel.setOrigin(0, 0.5);
+        timeLabel.setDepth(10001);
+
+        // PROFIT label and value
+        const profitLabel = this.add.text(width - 20, barY, 'PROFIT: $0', {
+            fontSize: '24px',
+            color: '#00FF00',
+            fontFamily: 'Arial',
+            fontStyle: 'bold'
+        });
+        profitLabel.setOrigin(1, 0.5);
+        profitLabel.setDepth(10001);
+
+        console.log('  → Created stats bar at top');
+    }
+
     private createTilePalette(): void {
-        const startX = 60;
-        const tileSize = 40;
-        const spacing = 10;
+        const startX = 20;
+        const tileSize = 60; // Increased from 40
+        const spacing = 8;
         const y = 0; // Relative to bottomBar container
 
         this.FREE_TILES.forEach((tileType, index) => {
@@ -119,21 +154,21 @@ export class EditorUIScene extends Phaser.Scene {
     }
 
     private createUndoButton(): void {
-        const startX = 60;
-        const tileSize = 40;
-        const spacing = 10;
+        const startX = 20;
+        const tileSize = 60;
+        const spacing = 8;
         const paletteWidth = this.FREE_TILES.length * (tileSize + spacing);
-        const x = startX + paletteWidth + 20;
+        const x = startX + paletteWidth + 15;
         const y = 0;
 
         this.undoButton = this.add.container(x, y);
 
-        const bg = this.add.rectangle(0, 0, 80, 60, 0x6366f1);
+        const bg = this.add.rectangle(0, 0, 110, 60, 0x6366f1); // Wider button
         bg.setStrokeStyle(3, 0xFFFFFF);
         bg.setInteractive({ useHandCursor: true });
 
         const text = this.add.text(0, 0, '↶ UNDO', {
-            fontSize: '16px',
+            fontSize: '18px',
             color: '#FFFFFF',
             fontFamily: 'Arial',
             fontStyle: 'bold'
