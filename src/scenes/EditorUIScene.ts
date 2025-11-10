@@ -124,6 +124,9 @@ export class EditorUIScene extends Phaser.Scene {
         const spacing = 8;
         const y = 0; // Relative to bottomBar container
 
+        console.log('🎨 Creating palette. TILES.DOOR =', TILES.DOOR, 'COLORS[TILES.DOOR] =', COLORS[TILES.DOOR]);
+        console.log('🎨 FREE_TILES:', this.FREE_TILES);
+
         this.FREE_TILES.forEach((tileType, index) => {
             const x = startX + (index * (tileSize + spacing));
 
