@@ -28,6 +28,10 @@ export const COLORS = {
     [TILES.STAFF_ZONE]: 0x4169E1,  // Blue staff area
     [TILES.STAIRS]: 0x6B5F47,      // Grey-brown stairs
     [TILES.BEER_TAP]: 0xFFFF00,    // Yellow beer tap
+    [TILES.EMPLOYEE_SPAWN]: 0xFF6B6B,  // Salmon red - employee spawn point
+    [TILES.PATRON_SPAWN]: 0xFFA500,    // Orange - patron spawn point
+    [TILES.CAMERA_START]: 0x9370DB,    // Medium purple - camera position
+    [TILES.POI]: 0x00CED1,            // Dark turquoise - point of interest
     [TILES.CHAIR]: 0x2C5F2D,       // Dark forest green - smoking chairs
     [TILES.CASH_REGISTER]: 0x228B22  // Money green - cash register
 };

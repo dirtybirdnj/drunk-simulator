@@ -83,8 +83,8 @@ export class EditorUIScene extends Phaser.Scene {
         const bg = this.add.rectangle(width / 2, barY, width, barHeight, 0x000000, 0.8);
         bg.setDepth(10000);
 
-        // TIME label and value
-        const timeLabel = this.add.text(20, barY, 'TIME: 00:00', {
+        // TIME label and value - moved down and right from corner
+        const timeLabel = this.add.text(50, barY + 8, 'TIME: 00:00', {
             fontSize: '24px',
             color: '#FFFFFF',
             fontFamily: 'Arial',
@@ -93,8 +93,8 @@ export class EditorUIScene extends Phaser.Scene {
         timeLabel.setOrigin(0, 0.5);
         timeLabel.setDepth(10001);
 
-        // PROFIT label and value
-        const profitLabel = this.add.text(width - 20, barY, 'PROFIT: $0', {
+        // PROFIT label and value - moved down and left from corner
+        const profitLabel = this.add.text(width - 50, barY + 8, 'PROFIT: $0', {
             fontSize: '24px',
             color: '#00FF00',
             fontFamily: 'Arial',
@@ -154,16 +154,13 @@ export class EditorUIScene extends Phaser.Scene {
     }
 
     private createUndoButton(): void {
-        const startX = 20;
-        const tileSize = 60;
-        const spacing = 8;
-        const paletteWidth = this.FREE_TILES.length * (tileSize + spacing);
-        const x = startX + paletteWidth + 15;
-        const y = 0;
+        const width = this.cameras.main.width;
+        const x = width - 120; // Right side, same x as START
+        const y = -35; // Above center (START will be at +35)
 
         this.undoButton = this.add.container(x, y);
 
-        const bg = this.add.rectangle(0, 0, 110, 60, 0x6366f1); // Wider button
+        const bg = this.add.rectangle(0, 0, 200, 50, 0x6366f1); // Match START width
         bg.setStrokeStyle(3, 0xFFFFFF);
         bg.setInteractive({ useHandCursor: true });
 
@@ -182,22 +179,22 @@ export class EditorUIScene extends Phaser.Scene {
         this.undoButton.add([bg, text]);
         this.bottomBar.add(this.undoButton);
 
-        console.log('  → Created undo button');
+        console.log('  → Created undo button (above START)');
     }
 
     private createModeButton(): void {
         const width = this.cameras.main.width;
         const x = width - 120;
-        const y = 0;
+        const y = 35; // Below center (UNDO will be at -35)
 
         this.modeButton = this.add.container(x, y);
 
-        const bg = this.add.rectangle(0, 0, 200, 60, 0x10b981);
+        const bg = this.add.rectangle(0, 0, 200, 50, 0x10b981);
         bg.setStrokeStyle(3, 0xFFFFFF);
         bg.setInteractive({ useHandCursor: true });
 
         const text = this.add.text(0, 0, '▶️ START', {
-            fontSize: '24px',
+            fontSize: '20px',
             color: '#FFFFFF',
             fontFamily: 'Arial',
             fontStyle: 'bold'
@@ -211,7 +208,7 @@ export class EditorUIScene extends Phaser.Scene {
         this.modeButton.add([bg, text]);
         this.bottomBar.add(this.modeButton);
 
-        console.log('  → Created START button');
+        console.log('  → Created START button (below UNDO)');
     }
 
     private createPlaybackControls(): void {
