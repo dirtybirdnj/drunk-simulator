@@ -341,6 +341,9 @@
     </div>
 
     <script>
+        // ⚠️ CRITICAL: This is the SOURCE OF TRUTH for tile colors
+        // The mobile editor (EditorUIScene.ts / TileTypes.ts) must match these colors EXACTLY
+        // NEVER change these to match mobile - always update mobile to match premium
         const COLORS = {
             0: '#707070',  // Street
             1: '#D2B48C',  // Bar floor
@@ -352,10 +355,10 @@
             7: '#6B5F47',  // Stairs
             8: '#00ff00',  // Player start marker
             9: '#FFFF00',  // Beer tap (yellow)
-            10: '#ff0000', // Employee spawn marker
-            11: '#FFA500', // Patron spawn marker
-            12: '#00FFFF', // Camera start marker (cyan)
-            13: '#9B30FF', // POI - Point of Interest (purple)
+            10: '#ff0000', // Employee spawn marker (RED)
+            11: '#FFA500', // Patron spawn marker (ORANGE)
+            12: '#00FFFF', // Camera start marker (CYAN)
+            13: '#9B30FF', // POI - Point of Interest (PURPLE)
             14: '#2C5F2D', // Chair - dark forest green
             15: '#228B22'  // Cash Register - money green
         };

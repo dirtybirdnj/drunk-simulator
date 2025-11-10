@@ -127,13 +127,17 @@ export class EditorUIScene extends Phaser.Scene {
         this.FREE_TILES.forEach((tileType, index) => {
             const x = startX + (index * (tileSize + spacing));
 
-            // Tile background
+            // Tile background with WHITE border (so black tiles are visible)
             const bg = this.add.rectangle(x, y, tileSize, tileSize, 0x333333);
-            bg.setStrokeStyle(2, 0x666666);
+            bg.setStrokeStyle(3, 0xFFFFFF); // White border, not grey
             bg.setInteractive({ useHandCursor: true });
 
             // Tile color
-            const tile = this.add.rectangle(x, y, tileSize - 4, tileSize - 4, COLORS[tileType] || 0xFF00FF);
+            const color = COLORS[tileType];
+            if (color === undefined) {
+                console.error('❌ Missing color for tile type:', tileType);
+            }
+            const tile = this.add.rectangle(x, y, tileSize - 6, tileSize - 6, color || 0xFF00FF);
 
             // Store reference
             this.paletteTiles.set(tileType, bg);
@@ -147,13 +151,13 @@ export class EditorUIScene extends Phaser.Scene {
 
             // Hover effect
             bg.on('pointerover', () => {
-                if (this.mode === EditorMode.EDIT) {
-                    bg.setStrokeStyle(2, 0xFFFFFF);
+                if (this.mode === EditorMode.EDIT && this.selectedTile !== tileType) {
+                    bg.setStrokeStyle(4, 0xFFFFFF); // Thicker white border on hover
                 }
             });
             bg.on('pointerout', () => {
                 if (this.selectedTile !== tileType) {
-                    bg.setStrokeStyle(2, 0x666666);
+                    bg.setStrokeStyle(3, 0xFFFFFF); // Back to normal white border
                 }
             });
 
@@ -270,7 +274,7 @@ export class EditorUIScene extends Phaser.Scene {
 
     private selectTile(tileType: number): void {
         this.paletteTiles.forEach((bg, type) => {
-            bg.setStrokeStyle(2, type === tileType ? 0xFFFF00 : 0x666666);
+            bg.setStrokeStyle(3, type === tileType ? 0xFFFF00 : 0xFFFFFF); // Yellow when selected, white when not
         });
         this.selectedTile = tileType;
 

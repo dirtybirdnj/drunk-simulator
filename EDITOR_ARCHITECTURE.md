@@ -2,6 +2,14 @@
 
 **CRITICAL**: This project has TWO separate map editors that must remain synchronized.
 
+**⚠️ SOURCE OF TRUTH**: The **Premium Desktop Editor** (`map-editor.html`) is the authoritative source for:
+- Tile colors (COLORS array, line ~347)
+- Tile types and their numeric IDs
+- Map serialization format
+
+**NEVER** take settings from the mobile editor and apply them to the premium editor unless explicitly instructed.
+**ALWAYS** sync the mobile editor (TileTypes.ts, EditorUIScene.ts) to match the premium editor.
+
 ## Two Editor Systems
 
 ### 1. Premium Desktop Editor (`map-editor.html`)
