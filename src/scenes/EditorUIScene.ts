@@ -17,6 +17,7 @@ export class EditorUIScene extends Phaser.Scene {
     private modeButton!: Phaser.GameObjects.Container;
     private undoButton!: Phaser.GameObjects.Container;
     private playbackControls!: Phaser.GameObjects.Container;
+    private selectedTileText!: Phaser.GameObjects.Text;
 
     // Undo history
     private editHistory: Array<{row: number, col: number, oldTile: number, newTile: number}> = [];
@@ -64,6 +65,17 @@ export class EditorUIScene extends Phaser.Scene {
         // Create top stats bar
         this.createStatsBar();
 
+        // Create selected tile name display (above palette)
+        this.selectedTileText = this.add.text(this.cameras.main.width / 2, -55, 'Bar Floor', {
+            fontSize: '20px',
+            color: '#FFFF00',
+            fontFamily: 'Arial',
+            fontStyle: 'bold'
+        });
+        this.selectedTileText.setOrigin(0.5);
+        this.selectedTileText.setDepth(10001);
+        this.bottomBar.add(this.selectedTileText);
+
         // Create UI elements
         this.createTilePalette();
         this.createUndoButton();
@@ -107,8 +119,8 @@ export class EditorUIScene extends Phaser.Scene {
     }
 
     private createTilePalette(): void {
-        const startX = 20;
-        const tileSize = 60; // Increased from 40
+        const startX = 38; // Moved right 18px (~1/4 inch at 72dpi)
+        const tileSize = 60;
         const spacing = 8;
         const y = 0; // Relative to bottomBar container
 
@@ -155,7 +167,7 @@ export class EditorUIScene extends Phaser.Scene {
 
     private createUndoButton(): void {
         const width = this.cameras.main.width;
-        const x = width - 120; // Right side, same x as START
+        const x = width - 138; // Moved left 18px from -120
         const y = -35; // Above center (START will be at +35)
 
         this.undoButton = this.add.container(x, y);
@@ -184,7 +196,7 @@ export class EditorUIScene extends Phaser.Scene {
 
     private createModeButton(): void {
         const width = this.cameras.main.width;
-        const x = width - 120;
+        const x = width - 138; // Moved left 18px from -120
         const y = 35; // Below center (UNDO will be at -35)
 
         this.modeButton = this.add.container(x, y);
@@ -261,6 +273,26 @@ export class EditorUIScene extends Phaser.Scene {
             bg.setStrokeStyle(2, type === tileType ? 0xFFFF00 : 0x666666);
         });
         this.selectedTile = tileType;
+
+        // Update tile name display
+        if (this.selectedTileText) {
+            this.selectedTileText.setText(this.getTileName(tileType));
+        }
+    }
+
+    private getTileName(tileType: number): string {
+        const names: { [key: number]: string } = {
+            [TILES.BAR_FLOOR]: 'Bar Floor',
+            [TILES.WALL]: 'Wall',
+            [TILES.BAR_COUNTER]: 'Counter',
+            [TILES.BEER_TAP]: 'Beer Tap',
+            [TILES.CASH_REGISTER]: 'Cash Register',
+            [TILES.DOOR]: 'Door',
+            [TILES.CHAIR]: 'Chair',
+            [TILES.PATRON_SPAWN]: 'Patron Spawn',
+            [TILES.EMPLOYEE_SPAWN]: 'Employee Spawn'
+        };
+        return names[tileType] || 'Unknown';
     }
 
     private toggleMode(): void {
