@@ -7,6 +7,7 @@ import { NPCAIController } from '../systems/NPCAIController';
 import { VisualizationHelpers } from '../systems/VisualizationHelpers';
 import { LevelSize, LEVEL_CONFIGS, GameState } from '../types/GameState';
 import { EditorUI, EditorMode } from '../systems/EditorUI';
+import { TILES, COLORS } from '../systems/TileTypes';
 
 export class GameScene extends Phaser.Scene {
     private player!: Phaser.Physics.Arcade.Sprite;
@@ -65,6 +66,10 @@ export class GameScene extends Phaser.Scene {
     private editorUI!: EditorUI;
     private gridTiles: Map<string, Phaser.GameObjects.Rectangle> = new Map(); // For visual updates
     private patronSpawns: Array<{x: number, y: number}> = [];
+    private gridGraphics!: Phaser.GameObjects.Graphics; // Grid overlay for EDIT mode
+    private hoverPreview: Phaser.GameObjects.Rectangle | null = null; // Hover preview tile
+    private lastHoverRow: number = -1;
+    private lastHoverCol: number = -1;
 
     constructor() {
         super({ key: 'GameScene' });
@@ -109,26 +114,20 @@ export class GameScene extends Phaser.Scene {
             }
         }
 
-        // Priority 3: Load starter layout for selected level
+        // Priority 3: Create blank slate (all street tiles) for editor
         const levelConfig = LEVEL_CONFIGS[selectedLevel];
-        if (levelConfig.starterLayout) {
-            // Convert starter layout string to grid array
-            const layout = levelConfig.starterLayout;
-            const grid: number[][] = [];
-            for (let row = 0; row < levelConfig.worldHeight; row++) {
-                const rowData: number[] = [];
-                for (let col = 0; col < levelConfig.worldWidth; col++) {
-                    const index = row * levelConfig.worldWidth + col;
-                    rowData.push(parseInt(layout[index] || '0'));
-                }
-                grid.push(rowData);
+
+        // Start with completely blank grid (all STREET tiles = 0)
+        const grid: number[][] = [];
+        for (let row = 0; row < levelConfig.worldHeight; row++) {
+            const rowData: number[] = [];
+            for (let col = 0; col < levelConfig.worldWidth; col++) {
+                rowData.push(TILES.STREET); // All grey street tiles
             }
-            this.selectedMapData = grid;
-            console.log(`📍 Loaded starter layout for ${levelConfig.name}: ${levelConfig.worldWidth}×${levelConfig.worldHeight}`);
-        } else {
-            console.log('📍 Using default map');
-            this.selectedMapData = null;
+            grid.push(rowData);
         }
+        this.selectedMapData = grid;
+        console.log(`📍 Created blank editor grid for ${levelConfig.name}: ${levelConfig.worldWidth}×${levelConfig.worldHeight}`);
     }
 
     preload() {
@@ -204,12 +203,12 @@ export class GameScene extends Phaser.Scene {
         this.playerArrow.setDepth(101);
         this.visualizationHelpers.updatePlayerArrow(this.playerArrow, this.player, this.playerFacingAngle);
 
-        // Camera setup - follows player vertically, locked horizontally
-        this.cameras.main.setBounds(0, 0, this.MAP_COLS * this.TILE_SIZE, this.MAP_ROWS * this.TILE_SIZE);
-
+        // Camera setup
         // Calculate zoom to fill viewport with smaller maps
-        // Reserve space for editor UI bars (60px top + 140px bottom = 200px total)
-        const UI_RESERVED_HEIGHT = 200;
+        // Reserve space for editor UI bars (60px top + 180px bottom = 240px total)
+        const TOP_BAR_HEIGHT = 60;
+        const BOTTOM_BAR_HEIGHT = 180;
+        const UI_RESERVED_HEIGHT = TOP_BAR_HEIGHT + BOTTOM_BAR_HEIGHT;
         const gameWidth = 1024;  // Canvas width from config
         const gameHeight = 1824 - UI_RESERVED_HEIGHT; // Canvas height minus UI bars
         const mapPixelWidth = this.MAP_COLS * this.TILE_SIZE;
@@ -224,18 +223,36 @@ export class GameScene extends Phaser.Scene {
         // Large maps (zoom < 1): tiles appear SMALLER
         const zoom = Math.min(zoomX, zoomY);
 
+        // Set viewport to start below top stats bar
+        this.cameras.main.setViewport(0, TOP_BAR_HEIGHT, gameWidth, gameHeight);
         this.cameras.main.setZoom(zoom);
         console.log(`📷 Camera zoom set to ${zoom.toFixed(2)}x (map: ${this.MAP_COLS}×${this.MAP_ROWS}, pixels: ${mapPixelWidth}×${mapPixelHeight}, available height: ${gameHeight})`);
 
-        // Offset camera vertically to center between top bar (60px) and bottom bar (140px)
-        // Difference is 80px, so offset down by 40px
-        this.cameras.main.setScroll(0, -40);
+        // For small maps that fit entirely in view, center the camera and don't follow player
+        const mapFitsInView = zoom >= 1.0;
+        if (mapFitsInView) {
+            // For small maps, expand bounds to allow centering with black space around edges
+            const viewportWorldWidth = gameWidth / zoom;
+            const viewportWorldHeight = gameHeight / zoom;
+            const boundsWidth = Math.max(mapPixelWidth, viewportWorldWidth);
+            const boundsHeight = Math.max(mapPixelHeight, viewportWorldHeight);
+            const offsetX = (boundsWidth - mapPixelWidth) / 2;
+            const offsetY = (boundsHeight - mapPixelHeight) / 2;
 
-        this.cameras.main.startFollow(this.player, false, 0.08, 0.08);
+            this.cameras.main.setBounds(-offsetX, -offsetY, boundsWidth, boundsHeight);
 
-        // Center camera horizontally on the map, vertically on player
-        this.cameras.main.scrollX = 0;
-        console.log(`📷 Camera following player - starts at player position (${this.player.x}, ${this.player.y})`);
+            // Center camera - don't follow player for small maps
+            this.cameras.main.centerOn(mapPixelWidth / 2, mapPixelHeight / 2);
+            console.log(`📷 Small map centered at (${mapPixelWidth/2}, ${mapPixelHeight/2}) - bounds (${boundsWidth}×${boundsHeight})`);
+        } else {
+            // Large map - set bounds to map size and follow player
+            this.cameras.main.setBounds(0, 0, mapPixelWidth, mapPixelHeight);
+            this.cameras.main.setScroll(0, -40);
+            this.cameras.main.startFollow(this.player, false, 0.08, 0.08);
+            console.log(`📷 Large map - camera follows player`);
+        }
+
+        console.log(`📷 Camera setup complete - player at (${this.player.x}, ${this.player.y})`);
 
         // Collision
         this.physics.add.collider(this.player, this.walls);
@@ -288,7 +305,8 @@ export class GameScene extends Phaser.Scene {
 
         // Initialize NPC spawner
         this.npcSpawner = new NPCSpawner(this, this.npcs, this.walls, this.TILE_SIZE, this.barServiceZones);
-        this.npcSpawner.createNPCs(this.employeeSpawns);
+        // DON'T spawn NPCs yet - wait for player to click START
+        // this.npcSpawner.createNPCs(this.employeeSpawns);
 
         // UI - Instructions removed for cleaner interface
         // const instructions = this.add.text(10, 10, 'ARROWS/CLICK: Move | SPACE: Order Beer | STAFF=Red | PATRONS=Orange', {
@@ -361,6 +379,10 @@ export class GameScene extends Phaser.Scene {
 
         // Enable grid editing
         this.input.on('pointerdown', this.handleGridClick, this);
+        this.input.on('pointermove', this.handleGridHover, this);
+
+        // Create grid overlay for EDIT mode
+        this.createGridOverlay();
 
         console.log('🛠️ In-game editor launched as separate scene');
     }
@@ -368,15 +390,20 @@ export class GameScene extends Phaser.Scene {
     update() {
         if (!this.player) return;
 
-        // Lock camera horizontally
-        this.cameras.main.scrollX = 0;
+        // Lock camera horizontally (only for large maps that follow player)
+        const editorUI = this.scene.get('EditorUIScene') as any;
+        const inEditMode = editorUI && editorUI.getMode && editorUI.getMode() === 'EDIT';
+
+        // Don't reset camera scroll for small centered maps
+        if (!inEditMode && this.cameras.main.followOffset) {
+            this.cameras.main.scrollX = 0;
+        }
 
         const playerState = this.player.getData('state');
         const socialTarget = this.player.getData('socialTarget');
 
         // Don't update player movement in EDIT mode
-        const editorUI = this.scene.get('EditorUIScene') as any;
-        if (editorUI && editorUI.getMode && editorUI.getMode() === 'EDIT') {
+        if (inEditMode) {
             this.player.setVelocity(0);
             return;
         }
@@ -705,7 +732,77 @@ export class GameScene extends Phaser.Scene {
     // ========== IN-GAME EDITOR METHODS (Free Mobile Version) ==========
     // See EDITOR_ARCHITECTURE.md for details on dual-editor system
 
+    private handleGridHover(pointer: Phaser.Input.Pointer): void {
+        const editorUI = this.scene.get('EditorUIScene') as any;
+        if (!editorUI || editorUI.getMode() !== 'EDIT') {
+            // Clear hover preview if not in EDIT mode
+            if (this.hoverPreview) {
+                this.hoverPreview.destroy();
+                this.hoverPreview = null;
+            }
+            return;
+        }
+
+        // Convert world coordinates to grid coordinates
+        const col = Math.floor(pointer.worldX / this.TILE_SIZE);
+        const row = Math.floor(pointer.worldY / this.TILE_SIZE);
+
+        // Check bounds
+        if (row < 0 || row >= this.currentGrid.length || col < 0 || col >= this.currentGrid[0].length) {
+            // Out of bounds - hide preview
+            if (this.hoverPreview) {
+                this.hoverPreview.destroy();
+                this.hoverPreview = null;
+            }
+            this.lastHoverRow = -1;
+            this.lastHoverCol = -1;
+            return;
+        }
+
+        // Check if in fill mode
+        if (editorUI.isFillMode()) {
+            // Let EditorUI handle fill preview (rectangular region)
+            editorUI.updateFillPreview(row, col);
+
+            // Clear single-tile hover preview
+            if (this.hoverPreview) {
+                this.hoverPreview.destroy();
+                this.hoverPreview = null;
+            }
+            return;
+        }
+
+        // Check if we're hovering over a different tile
+        if (row === this.lastHoverRow && col === this.lastHoverCol) {
+            return; // Same tile, no need to update
+        }
+
+        // Update hover position
+        this.lastHoverRow = row;
+        this.lastHoverCol = col;
+
+        // Get selected tile color
+        const selectedTile = editorUI.getSelectedTile();
+        const color = COLORS[selectedTile] !== undefined ? COLORS[selectedTile] : 0xFF00FF;
+
+        // Create or update hover preview (single tile)
+        const x = col * this.TILE_SIZE + this.TILE_SIZE / 2;
+        const y = row * this.TILE_SIZE + this.TILE_SIZE / 2;
+
+        if (this.hoverPreview) {
+            // Update existing preview
+            this.hoverPreview.setPosition(x, y);
+            this.hoverPreview.setFillStyle(color, 0.5); // 50% transparency
+        } else {
+            // Create new preview
+            this.hoverPreview = this.add.rectangle(x, y, this.TILE_SIZE, this.TILE_SIZE, color, 0.5);
+            this.hoverPreview.setDepth(999); // Below grid overlay (1000) but above tiles
+        }
+    }
+
     private handleGridClick(pointer: Phaser.Input.Pointer): void {
+        console.log(`🖱️ Grid clicked at screen (${pointer.x}, ${pointer.y}) world (${pointer.worldX}, ${pointer.worldY})`);
+
         const editorUI = this.scene.get('EditorUIScene') as any;
         if (!editorUI || editorUI.getMode() !== 'EDIT') {
             // In ACTIVE mode - handle player movement
@@ -717,8 +814,24 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
-        // In EDIT mode - place tiles
+        // Convert to grid coordinates
+        const col = Math.floor(pointer.worldX / this.TILE_SIZE);
+        const row = Math.floor(pointer.worldY / this.TILE_SIZE);
+
+        // Check bounds
+        if (row < 0 || row >= this.currentGrid.length || col < 0 || col >= this.currentGrid[0].length) {
+            return;
+        }
+
+        // Check if in fill mode
+        if (editorUI.isFillMode()) {
+            editorUI.handleFillClick(row, col);
+            return;
+        }
+
+        // In EDIT mode - place single tile
         const selectedTile = editorUI.getSelectedTile();
+        console.log(`🎨 Placing tile ${selectedTile} at (${pointer.worldX}, ${pointer.worldY})`);
         this.placeTileAt(pointer.worldX, pointer.worldY, selectedTile);
     }
 
@@ -761,10 +874,63 @@ export class GameScene extends Phaser.Scene {
         const key = `${row},${col}`;
         const existing = this.gridTiles.get(key);
 
+        const color = COLORS[tileType] !== undefined ? COLORS[tileType] : 0xFF00FF;
+
         if (existing) {
-            // Update color
-            const { COLORS } = require('../systems/TileTypes');
-            existing.setFillStyle(COLORS[tileType] || 0xFF00FF);
+            // Update existing tile color
+            existing.setFillStyle(color);
+        } else {
+            // Create new tile if it doesn't exist
+            const x = col * this.TILE_SIZE;
+            const y = row * this.TILE_SIZE;
+            const tile = this.add.rectangle(
+                x + this.TILE_SIZE / 2,
+                y + this.TILE_SIZE / 2,
+                this.TILE_SIZE,
+                this.TILE_SIZE,
+                color
+            );
+            tile.setDepth(1);
+            this.gridTiles.set(key, tile);
+            console.log(`🎨 Created new tile visual at (${row}, ${col}) - type ${tileType}`);
+        }
+    }
+
+    private createGridOverlay(): void {
+        // Create graphics object for grid lines
+        this.gridGraphics = this.add.graphics();
+        this.gridGraphics.setDepth(1000); // Above tiles but below UI
+
+        const mapPixelWidth = this.MAP_COLS * this.TILE_SIZE;
+        const mapPixelHeight = this.MAP_ROWS * this.TILE_SIZE;
+
+        // Draw grid lines
+        this.gridGraphics.lineStyle(1, 0xFFFFFF, 0.15); // White, 15% opacity
+
+        // Vertical lines
+        for (let col = 0; col <= this.MAP_COLS; col++) {
+            const x = col * this.TILE_SIZE;
+            this.gridGraphics.lineBetween(x, 0, x, mapPixelHeight);
+        }
+
+        // Horizontal lines
+        for (let row = 0; row <= this.MAP_ROWS; row++) {
+            const y = row * this.TILE_SIZE;
+            this.gridGraphics.lineBetween(0, y, mapPixelWidth, y);
+        }
+
+        console.log(`📐 Created grid overlay: ${this.MAP_COLS}×${this.MAP_ROWS} tiles`);
+    }
+
+    private hideGridOverlay(): void {
+        if (this.gridGraphics) {
+            this.gridGraphics.setVisible(false);
+        }
+    }
+
+    private showGridOverlay(): void {
+        if (this.gridGraphics) {
+            this.gridGraphics.setVisible(true);
         }
     }
 
@@ -773,11 +939,17 @@ export class GameScene extends Phaser.Scene {
         // This transitions from EDIT → ACTIVE mode
         console.log('🎮 Starting game simulation...');
 
+        // Hide grid overlay during active mode
+        this.hideGridOverlay();
+
         // Save the layout one final time
         this.saveCurrentLayout();
 
         // Resume physics
         this.physics.resume();
+
+        // Spawn employees at marked locations
+        this.npcSpawner.createNPCs(this.employeeSpawns);
 
         // Spawn initial patrons
         for (let i = 0; i < 3; i++) {
@@ -819,11 +991,52 @@ export class GameScene extends Phaser.Scene {
         // Pause physics (return to EDIT mode)
         this.physics.pause();
 
+        // Show grid overlay again for editing
+        this.showGridOverlay();
+
         // Update UI
         const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];
         this.cashText.setText(`$${this.gameState.cashEarned} / $${levelConfig.cashThreshold}`);
 
         console.log('✅ Returned to EDIT mode');
+    }
+
+    public fillRectangle(startRow: number, startCol: number, endRow: number, endCol: number, tileType: number): void {
+        // Calculate bounds (handle any order of coordinates)
+        const minRow = Math.min(startRow, endRow);
+        const maxRow = Math.max(startRow, endRow);
+        const minCol = Math.min(startCol, endCol);
+        const maxCol = Math.max(startCol, endCol);
+
+        console.log(`🎨 Filling rectangle: (${minRow}, ${minCol}) to (${maxRow}, ${maxCol}) with tile ${tileType}`);
+
+        // Fill the rectangular region
+        for (let row = minRow; row <= maxRow; row++) {
+            for (let col = minCol; col <= maxCol; col++) {
+                // Check bounds
+                if (row >= 0 && row < this.currentGrid.length && col >= 0 && col < this.currentGrid[row].length) {
+                    this.currentGrid[row][col] = tileType;
+                    this.updateTileVisual(row, col, tileType);
+                }
+            }
+        }
+
+        this.saveCurrentLayout();
+        const tilesChanged = (maxRow - minRow + 1) * (maxCol - minCol + 1);
+        console.log(`✅ Filled ${tilesChanged} tiles`);
+    }
+
+    public clearAllTiles(): void {
+        // Fill the entire grid with STREET tiles (tile type 0)
+        for (let row = 0; row < this.currentGrid.length; row++) {
+            for (let col = 0; col < this.currentGrid[row].length; col++) {
+                this.currentGrid[row][col] = TILES.STREET;
+                this.updateTileVisual(row, col, TILES.STREET);
+            }
+        }
+
+        this.saveCurrentLayout();
+        console.log('🗑️ Cleared all tiles');
     }
 
     private saveCurrentLayout(): void {
@@ -838,26 +1051,12 @@ export class GameScene extends Phaser.Scene {
     }
 
     private loadSavedLayout(): void {
-        // Try to load previously saved layout
-        const saved = localStorage.getItem('drunkSimCurrentLayout');
-        if (saved) {
-            try {
-                const data = JSON.parse(saved);
-                if (data.level === this.gameState.currentLevel && data.grid) {
-                    this.currentGrid = data.grid;
-                    console.log('📂 Loaded saved layout from localStorage');
-                    return;
-                }
-            } catch (error) {
-                console.error('Failed to load saved layout:', error);
-            }
-        }
-
-        // No saved layout - create simple default (all grey street tiles)
+        // EDITOR MODE: Always start with blank grid (ignore localStorage)
+        // Create simple default (all grey street tiles)
         const levelConfig = LEVEL_CONFIGS[this.gameState.currentLevel];
         this.currentGrid = Array(levelConfig.worldHeight).fill(0).map(() =>
-            Array(levelConfig.worldWidth).fill(0)  // 0 = grey street tile
+            Array(levelConfig.worldWidth).fill(TILES.STREET)  // All grey street tiles
         );
-        console.log(`🆕 Created default layout: ${levelConfig.worldWidth}×${levelConfig.worldHeight} grey tiles`);
+        console.log(`🆕 Created blank editor grid: ${levelConfig.worldWidth}×${levelConfig.worldHeight} grey tiles`);
     }
 }

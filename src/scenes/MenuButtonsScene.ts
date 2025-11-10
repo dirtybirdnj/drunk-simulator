@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import confetti from 'canvas-confetti';
+// import confetti from 'canvas-confetti'; // TODO: Re-enable confetti after performance optimization
 import { LevelSize, LEVEL_CONFIGS } from '../types/GameState';
 
 export class MenuButtonsScene extends Phaser.Scene {
@@ -75,17 +75,10 @@ export class MenuButtonsScene extends Phaser.Scene {
                     subtext.setScale(1);
                 });
                 bg.on('pointerdown', () => {
-                    confetti({
-                        particleCount: 100,
-                        spread: 70,
-                        origin: { y: 0.6 }
-                    });
-
-                    this.time.delayedCall(500, () => {
-                        this.scene.stop('BootAnimationScene');
-                        this.registry.set('selectedLevel', level.size);
-                        this.scene.start('GameScene', { selectedLevel: level.size });
-                    });
+                    // Confetti disabled for performance - will re-enable after optimization
+                    this.scene.stop('BootAnimationScene');
+                    this.registry.set('selectedLevel', level.size);
+                    this.scene.start('GameScene', { selectedLevel: level.size });
                 });
             }
         });
@@ -93,45 +86,8 @@ export class MenuButtonsScene extends Phaser.Scene {
         // === BUTTONS ===
         const buttonsY = levelY + 180;
 
-        // START button (custom maps)
-        const startY = buttonsY;
-        const startBg = this.add.rectangle(width / 2, startY, 700, 100, 0x228B22);
-        startBg.setStrokeStyle(4, 0xFFFFFF);
-
-        const startText = this.add.text(width / 2, startY, '🍻 Custom Map 🍹', {
-            fontSize: '40px',
-            color: '#FFD700',
-            fontFamily: 'Pixelify Sans, sans-serif',
-            fontStyle: '700'
-        });
-        startText.setOrigin(0.5);
-
-        startBg.setInteractive({ useHandCursor: true });
-        startBg.on('pointerover', () => {
-            startBg.setFillStyle(0x32CD32);
-            startBg.setScale(1.05);
-            startText.setScale(1.05);
-        });
-        startBg.on('pointerout', () => {
-            startBg.setFillStyle(0x228B22);
-            startBg.setScale(1);
-            startText.setScale(1);
-        });
-        startBg.on('pointerdown', () => {
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 }
-            });
-
-            this.time.delayedCall(500, () => {
-                this.scene.stop('BootAnimationScene');
-                this.scene.start('GameScene', { selectedMap: this.selectedMap });
-            });
-        });
-
-        // SCAN button
-        const scanY = startY + 120;
+        // SCAN button (moved up to replace custom map button)
+        const scanY = buttonsY;
         const scanBg = this.add.rectangle(width / 2, scanY, 700, 100, 0xFF6B35);
         scanBg.setStrokeStyle(4, 0xFFFFFF);
 

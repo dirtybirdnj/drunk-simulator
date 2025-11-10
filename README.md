@@ -223,6 +223,11 @@ If you build upon this project, please provide attribution to the original autho
 
 - **Emoji/ASCII Dictionary**: https://gist.github.com/dkdndes/a224555858f185f1662e3384c6a410d9
 
+## TODO / Known Issues
+
+- **Confetti animation disabled** - Temporarily removed from menu button clicks for performance optimization. Will re-enable after boot animation optimization is complete. (See `src/scenes/MenuButtonsScene.ts`)
+- **Boot animation performance** - Reduced from 6 to 4 beer emojis to improve boot time
+
 ## Credits
 
 Created by Mat Gilbert
